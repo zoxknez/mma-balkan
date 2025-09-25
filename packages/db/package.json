@@ -1,0 +1,20 @@
+{
+  "name": "@mmasrb/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "prisma"
+  ],
+  "scripts": {
+  "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+  "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

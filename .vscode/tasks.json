@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Prisma sync schema",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"$env:DATABASE_URL='postgresql://postgres:postgres@localhost:55432/mmasrb?schema=public'; npx prisma db push --schema packages/db/prisma/schema.prisma; npx prisma generate --schema packages/db/prisma/schema.prisma"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$prisma"
+			],
+			"group": "build"
+		}
+	]
+}

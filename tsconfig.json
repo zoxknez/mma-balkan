@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [],
+  "compilerOptions": {
+    "types": ["node"],
+    "skipLibCheck": true
+  }
+}

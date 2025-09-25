@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "../..",
+    "baseUrl": ".",
+    "types": ["node"],
+    "paths": {
+      "@mmasrb/db": ["../../packages/db/src"]
+    }
+  },
+  "include": ["src", "../../packages/db/src"]
+}
