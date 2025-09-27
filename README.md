@@ -1,89 +1,169 @@
-# MMA SRB Platform (Monorepo)
+# 🥊 MMA Balkan - Futuristička MMA Platforma
 
-Full‑stack starter for a Balkan MMA hub: Next.js web app, shared Prisma/PostgreSQL DB, ingest worker for news/events, and a Python FastAPI microservice for predictions.
+Najmodernija web aplikacija za praćenje MMA scene na Balkanu. Spaja sve organizacije, borce i klubove sa regiona na jednom mestu sa futurističkim dizajnom i najnaprednijim tehnologijama.
 
-## What’s inside
-- apps/web: Next.js (React + TS) with basic pages (Home, Fighters, Events, News, Live, Forum) and a health API route.
-- packages/db: Prisma schema + client for PostgreSQL.
-- services/ingest: TypeScript worker that pulls MMA news via RSS and stores them in DB (runs on interval).
-- services/predictor: Python FastAPI with a dummy /predict endpoint (to be replaced by a trained model).
-- docker-compose: Local Postgres + Redis (optional for future queues).
+## 🚀 Tehnologije
 
-## Quick start
+- **Frontend Framework:** Next.js 14 + React 18
+- **Styling:** Tailwind CSS + Custom Futuristic Design System
+- **Animacije:** Framer Motion + CSS3 Animations
+- **3D Efekti:** Three.js + React Three Fiber (planiran)
+- **State Management:** Zustand
+- **API Calls:** React Query + Custom API Client
+- **UI Komponente:** Radix UI + Custom Components
+- **Typescript:** Full type safety
+- **Icons:** Lucide React
 
-1) Prereqs
-- Node.js 18+ and npm
-- Python 3.10+
-- (Optional) Docker Desktop for Postgres/Redis
+## 🎨 Dizajn Koncepti
 
-2) Configure environment
-- Copy env templates and adjust values
+### Futuristička Paleta Boja
+- **Pozadina:** Gradijenti od #0f0f0f do #2a2a2a
+- **Neon Akcenti:** #00ff88 (limeta), #00ccff (teal)
+- **Glassmorphism:** Transparentne kartice sa blur efektima
+- **Holografski Efekti:** Shimmer animacije na hover
 
-```powershell
-Copy-Item .env.example .env
-Copy-Item apps/web/.env.example apps/web/.env.local
-Copy-Item services/ingest/.env.example services/ingest/.env
-```
+### Animacije
+- Smooth page transitions
+- Hover efekti sa scale transformacijama  
+- Loading animacije sa neon glow
+- Particle sistemi u pozadini (planiran)
 
-If using Docker for DB/Redis:
-```powershell
-docker compose up -d
-```
+## 📱 Funkcionalnosti
 
-3) Install deps (workspaces)
-```powershell
+### MVP (Trenutno)
+- ✅ Futuristička početna stranica
+- ✅ Responsive navigacija sa glassmorphism
+- ✅ Lista boraca sa filtering i pretragom
+- ✅ Fighter cards sa statistikama
+- ✅ Animirane UI komponente
+- ✅ API client arhitektura
+
+### V2 (Planiran)
+- 🔄 3D Avatar komponente
+- 🔄 Live statistike i scoring
+- 🔄 Predikcije zajednice
+- 🔄 Push notifikacije
+- 🔄 Ćirilica/Latinica toggle
+- 🔄 Multi-jezik podrška
+
+## 🔧 Pokretanje
+
+```bash
+# Instaliraj dependencies
 npm install
+
+# Pokreni development server
+npm run dev
+
+# Otvori http://localhost:3000
 ```
 
-4) Initialize database (Prisma)
-```powershell
-npm run db:generate
-npm run db:push
+## 📁 Struktura Projekta
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── page.tsx           # Početna stranica
+│   ├── fighters/          # Stranice za borce
+│   └── globals.css        # Globalni stilovi
+├── components/            
+│   ├── ui/                # Osnovne UI komponente
+│   ├── fighters/          # Fighter-specific komponente
+│   └── layout.tsx         # Glavni layout
+├── lib/
+│   ├── api/               # API client i servisi
+│   ├── types.ts           # TypeScript tipovi
+│   └── utils.ts           # Helper funkcije
 ```
 
-5) Run services
-- Web (Next.js):
-```powershell
-npm run dev:web
-```
-- Ingest worker (RSS -> DB):
-```powershell
-npm run dev:worker
-```
-- Predictor (Python FastAPI):
-```powershell
-python -m uvicorn services.predictor.main:app --reload --host 127.0.0.1 --port 8001
+## 🎯 Ključne Komponente
+
+### Button
+```tsx
+<Button variant="neon" size="lg">
+  Futuristički dugme
+</Button>
 ```
 
-Open http://localhost:3000
-- Health check: http://localhost:3000/api/health
-
-## Environment
-Root `.env` (used by Prisma):
-```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mmasrb?schema=public
-REDIS_URL=redis://localhost:6379
-```
-
-Web `.env.local` (Next.js):
-```
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+### Card (Glassmorphism)
+```tsx
+<Card glass hover>
+  <CardContent>
+    Transparentna kartica sa blur efektom
+  </CardContent>
+</Card>
 ```
 
-Ingest `.env`:
-```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mmasrb?schema=public
-RSS_SOURCES=https://www.mmafighting.com/rss/index.xml,https://www.mmamania.com/rss,https://www.mmajunkie.usatoday.com/feed
-FETCH_INTERVAL_MS=900000
+### FighterCard
+```tsx
+<FighterCard 
+  fighter={fighter}
+  onFollow={handleFollow}
+  showStats={true}
+/>
 ```
 
-## Notes and next steps
-- Data model: currently includes NewsItem. Extend with Fighter, Organization, Event, Bout, Prediction, User.
-- Scraping: favor official APIs/RSS. Respect robots.txt and ToS.
-- AI: swap the dummy predictor for a real model (XGBoost/LightGBM). Add feature store and model registry.
-- Forum: integrate Discourse/NodeBB via SSO or build custom in web app.
-- Real‑time: add WebSocket/SSE for live text feed and chats.
-- Search: add Meilisearch/Elasticsearch for fast search/autocomplete.
+## 🌐 API Integracija
 
-## License
-Private starter. Add a proper license before public release.
+### Besplatni APIs
+- **Wikidata SPARQL** - Osnovni podaci o borcima
+- **Wikipedia REST API** - Biografije i slike
+- **TheSportsDB** - UFC organizacija podaci
+- **Custom Backend** - Balkanski borci i organizacije
+
+### API Client
+```typescript
+// Primer korišćenja
+const fighters = await FighterService.getFighters({
+  search: "Rakić",
+  weightClass: WeightClass.LIGHT_HEAVYWEIGHT,
+  limit: 10
+});
+```
+
+## 🎨 Custom CSS Klase
+
+```css
+.glass-card       /* Glassmorphism efekat */
+.neon-button      /* Neon glow dugme */
+.holographic      /* Shimmer animacija */
+.fighter-card     /* Fighter kartica sa hover */
+```
+
+## 🌍 Lokalizacija
+
+Podržani jezici:
+- 🇷🇸 Srpski (Latinica/Ćirilica)
+- 🇭🇷 Hrvatski  
+- 🇧🇦 Bosanski
+- 🇲🇪 Crnogorski
+- 🇸🇮 Slovenski
+- 🇲🇰 Makedonski 
+- 🇦🇱 Albanski
+
+## 📈 Roadmap
+
+### Q1 2025
+- [x] MVP Frontend
+- [ ] Backend API
+- [ ] User Authentication
+- [ ] Fighter database
+
+### Q2 2025  
+- [ ] 3D Avatars
+- [ ] Live Scoring
+- [ ] Mobile App
+- [ ] Push Notifications
+
+## 👨‍💻 Autor
+
+**GitHub Copilot** & **zoxknez**
+- GitHub: [@zoxknez](https://github.com/zoxknez)
+
+---
+
+⭐ **Star** repo ako ti se dopada projekat!  
+🔥 **Forkovaj** i kreiraj svoje MMA aplikacije!  
+💪 **Kontribuiraj** i postani deo MMA Balkan tima!
+
+**Sve borbe. Svi borci. Svi klubovi sa Balkana — na jednom mestu.**
