@@ -33,4 +33,12 @@ export async function registerClubRoutes(app: FastifyInstance) {
 
     return ok(items, { page, limit, total, totalPages: Math.ceil(total / limit) });
   });
+
+  app.get("/api/clubs/:id", async (req, reply) => {
+    const id = (req.params as any).id as string;
+    if (!id) return reply.code(400).send(fail("Missing club id"));
+    const club = await prisma.club.findUnique({ where: { id } });
+    if (!club) return reply.code(404).send(fail("Club not found"));
+    return ok(club);
+  });
 }

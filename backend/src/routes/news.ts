@@ -1,7 +1,41 @@
 import type { FastifyInstance } from "fastify";
-import { ok } from "../lib/apiResponse";
+import { ok, fail } from "../lib/apiResponse";
+import { prisma } from "../lib/prisma";
+import { z } from "zod";
 
 export async function registerNewsRoutes(app: FastifyInstance) {
-  app.get("/api/news", async () => ok([]));
-  app.get("/api/news/:id", async () => ok({}));
+  const q = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    category: z.string().optional(),
+    featured: z.coerce.boolean().optional(),
+    trending: z.coerce.boolean().optional(),
+    search: z.string().optional(),
+  });
+
+  app.get("/api/news", async (req, reply) => {
+    const parsed = q.safeParse((req as any).query);
+    if (!parsed.success) return reply.code(400).send(fail("Invalid query", parsed.error.issues));
+    const { page, limit, category, featured, trending, search } = parsed.data;
+
+    const where: any = {};
+    if (category) where.category = category;
+    if (featured !== undefined) where.featured = featured;
+    if (trending !== undefined) where.trending = trending;
+    if (search) where.OR = [{ title: { contains: search, mode: "insensitive" } }, { content: { contains: search, mode: "insensitive" } }];
+
+    const [total, items] = await Promise.all([
+      prisma.news.count({ where }),
+      prisma.news.findMany({ where, orderBy: [{ publishAt: "desc" }], skip: (page - 1) * limit, take: limit }),
+    ]);
+
+    return ok(items, { page, limit, total, totalPages: Math.ceil(total / limit) });
+  });
+
+  app.get("/api/news/:id", async (req, reply) => {
+    const id = (req.params as any).id as string;
+    const item = await prisma.news.findUnique({ where: { id } });
+    if (!item) return reply.code(404).send(fail("News not found"));
+    return ok(item);
+  });
 }
