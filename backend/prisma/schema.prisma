@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Club {
+  id        String   @id @default(cuid())
+  name      String
+  city      String
+  country   String
+  address   String?
+  website   String?
+  phone     String?
+  members   Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Minimal placeholders to align with frontend routes
+model Fighter {
+  id          String   @id @default(cuid())
+  name        String
+  nickname    String?
+  country     String
+  countryCode String
+  birthDate   DateTime?
+  heightCm    Int?
+  weightKg    Int?
+  weightClass String
+  reachCm     Int?
+  stance      String?
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  draws       Int      @default(0)
+  koTkoWins   Int      @default(0)
+  submissionWins Int   @default(0)
+  decisionWins Int     @default(0)
+  isActive    Boolean  @default(true)
+  lastFight   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  startAt   DateTime
+  status    String
+  city      String
+  country   String
+  mainEvent String?
+  ticketsAvailable Boolean @default(false)
+  fightsCount Int @default(0)
+  attendees  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model News {
+  id         String   @id @default(cuid())
+  title      String
+  slug       String   @unique
+  excerpt    String?
+  content    String
+  category   String
+  authorName String
+  imageUrl   String?
+  featured   Boolean  @default(false)
+  trending   Boolean  @default(false)
+  views      Int      @default(0)
+  likes      Int      @default(0)
+  publishAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

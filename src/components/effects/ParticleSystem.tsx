@@ -29,6 +29,7 @@ export function ParticleSystem({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const updateDimensions = () => {
       setDimensions({
         width: window.innerWidth,
@@ -42,8 +43,8 @@ export function ParticleSystem({
     // Initialize particles
     const initialParticles: Particle[] = Array.from({ length: particleCount }, (_, i) => ({
       id: i,
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
+      x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+      y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
       vx: (Math.random() - 0.5) * 0.5,
       vy: (Math.random() - 0.5) * 0.5,
       size: Math.random() * 2 + 1,
@@ -55,6 +56,7 @@ export function ParticleSystem({
 
     // Animation loop
     const animateParticles = () => {
+      if (typeof window === 'undefined') return;
       setParticles(prev => prev.map(particle => {
         const newX = particle.x + particle.vx;
         const newY = particle.y + particle.vy;
@@ -69,8 +71,8 @@ export function ParticleSystem({
         // Add new particles to replace dead ones
         Array.from({ length: Math.max(0, particleCount - prev.length) }, (_, i) => ({
           id: Date.now() + i,
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
+          x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+          y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
           vx: (Math.random() - 0.5) * 0.5,
           vy: (Math.random() - 0.5) * 0.5,
           size: Math.random() * 2 + 1,
@@ -186,14 +188,14 @@ export function FloatingElements() {
           }}
           animate={{
             x: [
-              Math.random() * window.innerWidth,
-              Math.random() * window.innerWidth,
-              Math.random() * window.innerWidth
+              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920)
             ],
             y: [
-              Math.random() * window.innerHeight,
-              Math.random() * window.innerHeight,
-              Math.random() * window.innerHeight
+              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)
             ],
             scale: [1, 1.5, 1]
           }}
