@@ -29,7 +29,7 @@ export function FighterCard({
   const winPercentage = total > 0 ? Math.round((wins / total) * 100) : 0;
   
   return (
-    <Card hover className="fighter-card group">
+    <Card className="fighter-card group transition-transform duration-300 hover:scale-105 cursor-pointer">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">

@@ -1,6 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003',
+  // U dev koristi relativni URL (proxy preko Next rewrites); u prod koristi NEXT_PUBLIC_API_URL
+  BASE_URL: process.env.NODE_ENV === 'development' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
   ENDPOINTS: {
     // Fighters
     FIGHTERS: '/api/fighters',

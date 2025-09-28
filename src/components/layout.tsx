@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, 
@@ -28,6 +28,14 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isMobileMenuOpen]);
 
   const navigation = [
     { name: 'Početna', href: '/', icon: Home },
@@ -41,30 +49,22 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-850 to-gray-900">
-      {/* Live ticker for ongoing events */}
-      <LiveTicker />
       {/* Ultra-Futuristic Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-card border-0 border-b border-green-400/20 backdrop-blur-xl overflow-hidden">
+      <nav className="fixed top-0 w-full z-50 border-b border-white/10 backdrop-blur-xl bg-gray-900/70 supports-[backdrop-filter]:bg-gray-900/60 shadow-[0_6px_20px_rgba(0,0,0,0.35)] overflow-hidden">
         {/* Cyber Grid Background */}
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
-            backgroundImage: `linear-gradient(rgba(0,255,136,0.1) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,255,136,0.1) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(0,255,136,0.06) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,255,136,0.06) 1px, transparent 1px)`,
             backgroundSize: '20px 20px'
           }} />
         </div>
         
         {/* Animated Glow Effect */}
         <motion.div 
-          className="absolute inset-0 bg-gradient-to-r from-green-400/5 via-blue-600/5 to-green-400/5"
-          animate={{ 
-            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
-          }}
-          transition={{ 
-            duration: 10, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
+          className="absolute inset-0 bg-gradient-to-r from-green-400/3 via-blue-600/3 to-green-400/3"
+          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
         />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -77,48 +77,27 @@ export function Layout({ children }: LayoutProps) {
               transition={{ duration: 0.5 }}
             >
               <Link href="/" className="flex items-center space-x-3 group">
-                {/* 3D Holographic Logo */}
+                {/* Logo */}
                 <motion.div 
                   className="relative w-12 h-12"
-                  animate={{ rotateY: [0, 360] }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  whileHover={{ rotate: 6 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 12 }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 rounded-xl blur-sm opacity-70" />
-                  <div className="relative w-full h-full bg-gray-900 rounded-xl border-2 border-green-400/50 flex items-center justify-center overflow-hidden">
-                    <Zap className="w-7 h-7 text-green-400 group-hover:animate-pulse" />
-                    {/* Holographic rings */}
-                    <div className="absolute inset-0 rounded-xl border border-green-400/30 animate-ping" />
-                    <div className="absolute inset-1 rounded-lg border border-blue-400/20 animate-pulse" />
+                  <div className="relative w-full h-full bg-gray-900 rounded-xl border border-green-400/40 flex items-center justify-center overflow-hidden">
+                    <Zap className="w-7 h-7 text-green-300 drop-shadow-[0_0_6px_#00ff88]" />
                   </div>
                 </motion.div>
                 
-                {/* Glitch Text Logo */}
+                {/* Brand Text */}
                 <motion.h1 
-                  className="text-2xl font-bold text-white group-hover:text-green-400 transition-colors relative"
-                  whileHover={{
-                    textShadow: [
-                      '0 0 10px #00ff88',
-                      '0 0 20px #00ff88, 0 0 30px #00ff88',
-                      '0 0 10px #00ff88'
-                    ]
-                  }}
-                  transition={{ duration: 0.3 }}
+                  className="text-2xl font-bold text-white transition-colors relative"
+                  whileHover={{ color: '#86efac' }}
                 >
                   MMA{' '}
                   <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent animate-pulse">
                     BALKAN
                   </span>
-                  {/* Glitch overlay */}
-                  <motion.span
-                    className="absolute inset-0 text-red-500 opacity-0 group-hover:opacity-100"
-                    animate={{
-                      x: [0, -2, 2, 0],
-                      opacity: [0, 0.3, 0, 0.2, 0]
-                    }}
-                    transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3 }}
-                  >
-                    MMA BALKAN
-                  </motion.span>
                 </motion.h1>
               </Link>
             </motion.div>
@@ -126,7 +105,7 @@ export function Layout({ children }: LayoutProps) {
             {/* Ultra-Futuristic Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-2">
               {navigation.map((item, index) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                   <motion.div
                     key={item.name}
@@ -137,70 +116,43 @@ export function Layout({ children }: LayoutProps) {
                     <Link
                       href={item.href}
                       className={cn(
-                        'nav-link relative flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 group overflow-hidden',
-                        isActive 
-                          ? 'text-green-400 bg-green-400/10 shadow-lg shadow-green-400/20' 
-                          : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        'nav-link relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 group overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/50 focus-visible:ring-offset-0',
+                        isActive ? 'text-green-300' : 'text-gray-300 hover:text-white'
                       )}
+                      aria-current={isActive ? 'page' : undefined}
                     >
-                      {/* Holographic background */}
-                      <div className={cn(
-                        "absolute inset-0 rounded-xl border transition-all duration-300",
-                        isActive 
-                          ? "border-green-400/50 bg-gradient-to-r from-green-400/5 to-blue-600/5"
-                          : "border-transparent group-hover:border-white/20 group-hover:bg-gradient-to-r group-hover:from-green-400/5 group-hover:to-blue-600/5"
-                      )} />
+                      {/* Jedini sloj pozadine: aktivan ili hover (bez -z i bez BG/BORDER na Link-u) */}
+                      {isActive ? (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 z-0 rounded-xl bg-white/5 border border-white/10 shadow-[0_2px_10px_rgba(0,0,0,.35)]"
+                        />
+                      ) : (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 z-0 rounded-xl opacity-0 transition-opacity group-hover:opacity-100 bg-white/5 border border-white/10"
+                        />
+                      )}
                       
-                      {/* Icon with glow effect */}
-                      <motion.div
-                        className={cn(
-                          "relative z-10",
-                          isActive && "drop-shadow-lg"
-                        )}
-                        whileHover={{ scale: 1.1 }}
-                        animate={isActive ? {
-                          textShadow: [
-                            '0 0 5px #00ff88',
-                            '0 0 10px #00ff88',
-                            '0 0 5px #00ff88'
-                          ]
-                        } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
+                      {/* Icon */}
+                      <div className="relative z-10">
                         <item.icon className={cn(
-                          "w-4 h-4 transition-colors",
-                          isActive ? "text-green-400" : "text-gray-400 group-hover:text-white"
+                          'w-4 h-4 transition-colors',
+                          isActive ? 'text-green-400' : 'text-gray-400 group-hover:text-white'
                         )} />
-                      </motion.div>
+                      </div>
                       
-                      {/* Text with cyber effect */}
+                      {/* Label */}
                       <span className="relative z-10 font-semibold tracking-wide">
                         {item.name}
                       </span>
                       
-                      {/* Active indicator */}
+                      {/* Optional active indicator (može ostati, ne duplira slojeve) */}
                       {isActive && (
-                        <motion.div
-                          className="absolute bottom-0 left-1/2 w-6 h-0.5 bg-gradient-to-r from-green-400 to-blue-500 rounded-full"
-                          initial={{ width: 0, x: '-50%' }}
-                          animate={{ width: '1.5rem', x: '-50%' }}
-                          transition={{ duration: 0.3 }}
-                        />
+                        <span className="absolute bottom-0 left-1/2 w-6 h-0.5 -translate-x-1/2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full" />
                       )}
                       
-                      {/* Scan line effect */}
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/20 to-transparent opacity-0 group-hover:opacity-100"
-                        animate={{
-                          x: ['-100%', '100%']
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          repeatDelay: 2,
-                          ease: "linear"
-                        }}
-                      />
+                      {/* no scan-line */}
                     </Link>
                   </motion.div>
                 );
@@ -211,7 +163,8 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-4">
               {/* Quantum Search */}
               <motion.button 
-                className="relative p-3 text-gray-400 hover:text-green-400 rounded-xl transition-all duration-300 group overflow-hidden"
+                aria-label="Pretraga"
+                className="relative p-3 text-gray-400 hover:text-green-400 rounded-xl transition-all duration-200 group overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/60"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -300,7 +253,7 @@ export function Layout({ children }: LayoutProps) {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label={isMobileMenuOpen ? 'Zatvori meni' : 'Otvori meni'}
                 aria-expanded={isMobileMenuOpen}
-                className="md:hidden relative p-3 text-gray-300 hover:text-green-400 rounded-xl transition-all duration-300 group overflow-hidden"
+                className="md:hidden relative p-3 text-gray-300 hover:text-green-400 rounded-xl transition-all duration-200 group overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/60"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 animate={isMobileMenuOpen ? {
@@ -314,19 +267,13 @@ export function Layout({ children }: LayoutProps) {
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-blue-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute inset-0 border border-transparent group-hover:border-green-400/30 rounded-xl transition-colors" />
-                {/* Attention halo when closed (mobile) */}
+                {/* Attention halo when closed (mobile) - simplified, no label */}
                 {!isMobileMenuOpen && (
-                  <>
-                    <div className="pointer-events-none absolute -inset-3 rounded-2xl bg-green-400/10 blur-lg" />
-                    <motion.div
-                      className="pointer-events-none absolute inset-0 rounded-xl border border-green-400/30"
-                      animate={{ opacity: [0.2, 0.6, 0.2], scale: [1, 1.05, 1] }}
-                      transition={{ duration: 2.2, repeat: Infinity }}
-                    />
-                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-wider text-green-400/90">
-                      Meni
-                    </span>
-                  </>
+                  <motion.div
+                    className="pointer-events-none absolute -inset-3 rounded-2xl bg-green-400/10 blur-lg"
+                    animate={{ opacity: [0.15, 0.35, 0.15], scale: [1, 1.03, 1] }}
+                    transition={{ duration: 2.2, repeat: Infinity }}
+                  />
                 )}
                 
                 <AnimatePresence mode="wait">
@@ -376,6 +323,8 @@ export function Layout({ children }: LayoutProps) {
               exit={{ opacity: 0, height: 0, y: -10 }}
               className="md:hidden border-t border-green-400/20 bg-gray-900/95 backdrop-blur-xl relative overflow-hidden"
             >
+              {/* Backdrop overlay */}
+              <div className="fixed inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)} />
               {/* Cyber grid background */}
               <div className="absolute inset-0 opacity-5">
                 <div className="absolute inset-0" style={{
@@ -412,19 +361,23 @@ export function Layout({ children }: LayoutProps) {
                         href={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
-                          'flex items-center space-x-4 px-4 py-4 rounded-xl text-base font-medium transition-all duration-300 group relative overflow-hidden',
-                          isActive 
-                            ? 'text-green-400 bg-green-400/10 shadow-lg shadow-green-400/20 border border-green-400/30' 
-                            : 'text-gray-300 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/20'
+                          'flex items-center space-x-4 px-4 py-4 rounded-xl text-base font-medium transition-colors duration-300 group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/50 focus-visible:ring-offset-0',
+                          isActive ? 'text-green-300' : 'text-gray-300 hover:text-white'
                         )}
+                        aria-current={isActive ? 'page' : undefined}
                       >
-                        {/* Holographic background */}
-                        <div className={cn(
-                          "absolute inset-0 rounded-xl transition-all duration-300",
-                          isActive 
-                            ? "bg-gradient-to-r from-green-400/10 to-blue-600/10"
-                            : "bg-transparent group-hover:bg-gradient-to-r group-hover:from-green-400/5 group-hover:to-blue-600/5"
-                        )} />
+                        {/* Jedini sloj pozadine: aktivan ili hover */}
+                        {isActive ? (
+                          <span
+                            aria-hidden
+                            className="absolute inset-0 z-0 rounded-xl bg-white/5 border border-white/10 shadow-[0_2px_10px_rgba(0,0,0,.35)]"
+                          />
+                        ) : (
+                          <span
+                            aria-hidden
+                            className="absolute inset-0 z-0 rounded-xl opacity-0 transition-opacity group-hover:opacity-100 bg-white/5 border border-white/10"
+                          />
+                        )}
                         
                         {/* Icon with glow */}
                         <motion.div
@@ -539,6 +492,8 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       <main className="pt-16">
+        {/* Live ticker for ongoing events moved below navbar */}
+        <LiveTicker />
         {children}
       </main>
 

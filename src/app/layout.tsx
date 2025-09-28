@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MotionConfig } from 'framer-motion';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
   },
   description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima — neuralni UI, live statistika i futuristički vizuali.',
   metadataBase: new URL(siteUrl),
+  icons: { icon: '/favicon.ico' },
   openGraph: {
     title: 'MMA Balkan',
     description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima.',
@@ -45,11 +47,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="sr">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <MotionConfig reducedMotion="user">
+          {children}
+        </MotionConfig>
       </body>
     </html>
   );

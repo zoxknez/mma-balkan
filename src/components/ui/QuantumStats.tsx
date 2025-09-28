@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo, useId } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { TrendingUp, Zap, Target, Shield, Sword } from 'lucide-react';
 import { AnimatedCounter } from './NeuralComponents';
+import { cn } from '@/lib/utils';
 
 interface StatBarProps {
   label: string;
@@ -14,6 +15,7 @@ interface StatBarProps {
   showPercentage?: boolean;
   icon?: React.ReactNode;
   pulse?: boolean;
+  className?: string;
 }
 
 export function QuantumStatBar({ 
@@ -24,10 +26,16 @@ export function QuantumStatBar({
   animated = true,
   showPercentage = true,
   icon,
-  pulse = false
+  pulse = false,
+  className
 }: StatBarProps) {
   const [displayValue, setDisplayValue] = useState(0);
-  const percentage = Math.min((value / maxValue) * 100, 100);
+  const prefersReduced = useReducedMotion();
+  const percentage = useMemo(() => {
+    const safeMax = Math.max(1, maxValue || 0);
+    const pct = (value / safeMax) * 100;
+    return Math.max(0, Math.min(pct, 100));
+  }, [value, maxValue]);
 
   useEffect(() => {
     if (animated) {
@@ -41,7 +49,7 @@ export function QuantumStatBar({
   }, [value, animated]);
 
   return (
-    <div className="space-y-2">
+    <div className={cn('space-y-2', className)}>
       {/* Label and Value */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -62,14 +70,18 @@ export function QuantumStatBar({
       </div>
 
       {/* Progress Bar */}
-      <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+      <div
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={maxValue}
+        aria-valuenow={value}
+        className="relative h-2 bg-gray-800 rounded-full overflow-hidden"
+      >
         {/* Background Glow */}
         <div 
-          className="absolute inset-0 opacity-20 rounded-full"
-          style={{ 
-            background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
-            animation: pulse ? 'pulse 2s infinite' : 'none'
-          }}
+          className={`absolute inset-0 opacity-20 rounded-full ${pulse ? 'qsb-pulse' : ''}`}
+          style={{ background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }}
         />
         
         {/* Progress Fill */}
@@ -78,42 +90,26 @@ export function QuantumStatBar({
           style={{ background: `linear-gradient(90deg, ${color}, ${color}80)` }}
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
         >
           {/* Shine Effect */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              repeatDelay: 3,
-              ease: "linear" 
-            }}
-          />
+          {!prefersReduced && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
+            />
+          )}
         </motion.div>
 
         {/* Particles */}
-        {Array.from({ length: 5 }, (_, i) => (
+        {!prefersReduced && Array.from({ length: 5 }, (_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 rounded-full"
-            style={{ 
-              background: color,
-              top: '50%',
-              left: `${(percentage * (i + 1)) / 6}%`,
-              transform: 'translateY(-50%)'
-            }}
-            animate={{
-              scale: [0, 1, 0],
-              opacity: [0, 1, 0]
-            }}
-            transition={{
-              duration: 2,
-              delay: i * 0.3,
-              repeat: Infinity,
-              repeatDelay: 2
-            }}
+            style={{ background: color, top: '50%', left: `${(percentage * (i + 1)) / 6}%`, transform: 'translateY(-50%)' }}
+            animate={{ scale: [0, 1, 0], opacity: [0, 1, 0] }}
+            transition={{ duration: 2, delay: i * 0.3, repeat: Infinity, repeatDelay: 2 }}
           />
         ))}
       </div>
@@ -136,15 +132,16 @@ interface NeuralStatsProps {
 
 export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
   const [activeNode, setActiveNode] = useState<string | null>(null);
+  const prefersReduced = useReducedMotion();
   
-  const statNodes = [
+  const nodes = useMemo(() => ([
     { key: 'striking', label: 'Striking', x: 50, y: 20, icon: <Sword className="w-4 h-4" />, color: '#ff3366' },
     { key: 'grappling', label: 'Grappling', x: 80, y: 40, icon: <Shield className="w-4 h-4" />, color: '#00ccff' },
     { key: 'cardio', label: 'Cardio', x: 70, y: 80, icon: <TrendingUp className="w-4 h-4" />, color: '#00ff88' },
     { key: 'power', label: 'Power', x: 20, y: 40, icon: <Zap className="w-4 h-4" />, color: '#ffaa00' },
     { key: 'defense', label: 'Defense', x: 30, y: 80, icon: <Shield className="w-4 h-4" />, color: '#8B5CF6' },
     { key: 'aggression', label: 'Aggression', x: 10, y: 65, icon: <Target className="w-4 h-4" />, color: '#EC4899' }
-  ];
+  ]), []);
 
   return (
     <div className={`glass-card p-6 ${className}`}>
@@ -157,8 +154,8 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
       <div className="relative h-64 mb-6">
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {/* Connection Lines */}
-          {statNodes.map((node, i) => 
-            statNodes.slice(i + 1).map((otherNode, j) => (
+          {!prefersReduced && nodes.map((node, i) => 
+            nodes.slice(i + 1).map((otherNode, j) => (
               <motion.line
                 key={`${i}-${j}`}
                 x1={node.x}
@@ -175,7 +172,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
           )}
 
           {/* Stat Nodes */}
-          {statNodes.map((node, index) => {
+          {nodes.map((node, index) => {
             const statValue = stats[node.key as keyof typeof stats];
             const nodeSize = 2 + (statValue / 100) * 3;
             
@@ -188,7 +185,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
                   r={nodeSize + 1}
                   fill={node.color}
                   opacity="0.3"
-                  className="animate-pulse"
+                  className={prefersReduced ? undefined : 'animate-pulse'}
                 />
                 
                 {/* Main Node */}
@@ -197,13 +194,13 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
                   cy={node.y}
                   r={nodeSize}
                   fill={node.color}
-                  initial={{ scale: 0 }}
+                  initial={{ scale: prefersReduced ? 1 : 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   onMouseEnter={() => setActiveNode(node.key)}
                   onMouseLeave={() => setActiveNode(null)}
                   className="cursor-pointer"
-                  whileHover={{ scale: 1.2 }}
+                  whileHover={prefersReduced ? undefined : { scale: 1.2 }}
                 />
                 
                 {/* Node Label */}
@@ -221,6 +218,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
                         height="4"
                         fill="rgba(0, 0, 0, 0.8)"
                         rx="1"
+                        pointerEvents="none"
                       />
                       <text
                         x={node.x}
@@ -228,6 +226,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
                         textAnchor="middle"
                         fontSize="2"
                         fill="white"
+                        pointerEvents="none"
                       >
                         {node.label}: {statValue}
                       </text>
@@ -242,7 +241,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
 
       {/* Detailed Stats */}
       <div className="space-y-4">
-        {statNodes.map((node, index) => (
+        {nodes.map((node, index) => (
           <motion.div
             key={node.key}
             initial={{ opacity: 0, x: -20 }}
@@ -285,8 +284,12 @@ interface MomentumGraphProps {
 }
 
 export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
+  const gid = useId();
+  const { minValue, maxValue } = useMemo(() => ({
+    minValue: Math.min(...data.map(d => d.value)),
+    maxValue: Math.max(...data.map(d => d.value)),
+  }), [data]);
+  const denom = (maxValue - minValue) || 1;
   
   return (
     <div className={`glass-card p-6 ${className}`}>
@@ -312,12 +315,12 @@ export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
 
           {/* Momentum Line */}
           <motion.path
-            d={`M ${data.map((point, index) => {
-              const x = (index / (data.length - 1)) * 300;
-              const y = 100 - ((point.value - minValue) / (maxValue - minValue)) * 100;
+            d={`${data.map((point, index) => {
+              const x = (index / Math.max(1, data.length - 1)) * 300;
+              const y = 100 - ((point.value - minValue) / denom) * 100;
               return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
             }).join(' ')}`}
-            stroke="url(#momentumGradient)"
+            stroke={`url(#grad-${gid})`}
             strokeWidth="2"
             fill="none"
             initial={{ pathLength: 0 }}
@@ -327,8 +330,8 @@ export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
 
           {/* Data Points */}
           {data.map((point, index) => {
-            const x = (index / (data.length - 1)) * 300;
-            const y = 100 - ((point.value - minValue) / (maxValue - minValue)) * 100;
+            const x = (index / Math.max(1, data.length - 1)) * 300;
+            const y = 100 - ((point.value - minValue) / denom) * 100;
             const color = point.result === 'win' ? '#00ff88' : point.result === 'loss' ? '#ff3366' : '#ffaa00';
             
             return (
@@ -348,7 +351,7 @@ export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
 
           {/* Gradient Definition */}
           <defs>
-            <linearGradient id="momentumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={`grad-${gid}`} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#ff3366" />
               <stop offset="50%" stopColor="#ffaa00" />
               <stop offset="100%" stopColor="#00ff88" />

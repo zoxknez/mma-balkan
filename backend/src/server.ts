@@ -14,8 +14,15 @@ const BASE_PORT = Number(process.env.PORT || 3003);
 async function bootstrap() {
   const app = Fastify({ logger: true });
 
-  // CORS: allow all in dev; restrict in production
-  await app.register(cors, { origin: process.env.NODE_ENV === 'production' ? process.env.ORIGIN : true });
+  // CORS: u produkciji dozvoli poznate origin-e; u dev slobodno (ili true zbog lokalnog testiranja bez rewrites)
+  const allowedProdOrigins = [
+    process.env.ORIGIN,
+    'https://mma-balkan.org',
+  ].filter(Boolean) as string[];
+  await app.register(cors, { 
+    origin: process.env.NODE_ENV === 'production' ? allowedProdOrigins : true,
+    credentials: true,
+  });
   await app.register(swagger, {
     openapi: { info: { title: "MMA Serbia API", version: "0.1.0" } },
   });

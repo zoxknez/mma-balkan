@@ -39,9 +39,34 @@ export async function registerEventRoutes(app: FastifyInstance) {
     return ok(items);
   });
 
-  app.get("/api/events/live", async () => {
+  // SSE stream (Server-Sent Events)
+  app.get("/api/events/live", async (_req, _reply) => {
+    // JSON fallback za klijente koji ne koriste SSE
     const items = await prisma.event.findMany({ where: { status: { in: ["LIVE"] } }, orderBy: [{ startAt: "desc" }], take: 20 });
     return ok(items);
+  });
+
+  // Dedicated SSE-only endpoint da izbegnemo proxy/Accept edge-caseove
+  app.get("/api/events/live/stream", async (req, reply) => {
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-store');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.setHeader('X-Accel-Buffering', 'no');
+    (reply.raw as unknown as { flushHeaders?: () => void }).flushHeaders?.();
+
+    const send = (event: string, data: unknown) => {
+      reply.raw.write(`event: ${event}\n` + `data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    // inicijalni payload
+    const initial = await prisma.event.findMany({ where: { status: { in: ["LIVE"] } }, orderBy: [{ startAt: "desc" }], take: 20 });
+    send('hello', { status: 'ok', data: initial });
+
+    // heartbeat na 15s
+    const hb = setInterval(() => send('tick', { t: Date.now() }), 15000);
+    req.raw.on('close', () => clearInterval(hb));
+
+    return reply; // ostavi konekciju otvorenom
   });
 
   app.get("/api/events/:id", async (req, reply) => {

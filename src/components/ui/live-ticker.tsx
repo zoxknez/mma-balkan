@@ -13,32 +13,78 @@ type LiveEvent = {
 
 export function LiveTicker() {
   const [events, setEvents] = useState<LiveEvent[]>([]);
-  // Errors are silently ignored in UI; could be surfaced to a toast if desired
   const [, setError] = useState<string | null>(null);
-  const api = useMemo(() => process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003", []);
+  // U dev koristimo relativne rute (Next rewrites), u prod apsolutni ako je postavljen
+  const base = useMemo(() => (process.env.NODE_ENV === 'development' ? '' : (process.env.NEXT_PUBLIC_API_URL || '')), []);
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
-      try {
-        const res = await fetch(`${api}/api/events/live`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (mounted) {
-          setEvents(Array.isArray(json?.data) ? json.data : []);
-          setError(null);
+    let es: EventSource | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      const load = async () => {
+        try {
+          const res = await fetch(`${base}/api/events/live`, { cache: 'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          if (mounted) {
+            setEvents(Array.isArray(json?.data) ? json.data : []);
+            setError(null);
+          }
+        } catch (e) {
+          if (mounted) setError((e as Error).message);
         }
-      } catch (e) {
-        if (mounted) setError((e as Error).message);
-      }
+      };
+      load();
+      pollId = setInterval(load, 30000);
     };
-    load();
-    const id = setInterval(load, 15000);
+
+    try {
+      // Preferiraj dedicated SSE endpoint
+      es = new EventSource(`${base}/api/events/live/stream`);
+      es.addEventListener('hello', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data) as { data?: LiveEvent[] };
+          if (mounted && payload?.data) setEvents(payload.data);
+        } catch {}
+      });
+      es.addEventListener('tick', () => { /* heartbeat */ });
+      es.onerror = (err) => {
+        console.warn('SSE error in LiveTicker', err);
+        setError('SSE error');
+        es?.close();
+        // U dev okruženju pokušaj direktnu konekciju na backend ako proxy padne
+        if (process.env.NODE_ENV === 'development') {
+          try {
+            const direct = new EventSource(`http://127.0.0.1:3003/api/events/live/stream`);
+            direct.addEventListener('hello', (e: MessageEvent) => {
+              try {
+                const payload = JSON.parse(e.data) as { data?: LiveEvent[] };
+                if (mounted && payload?.data) setEvents(payload.data);
+              } catch {}
+            });
+            direct.addEventListener('tick', () => {});
+            direct.onerror = () => {
+              direct.close();
+              startPolling();
+            };
+            es = direct;
+            return;
+          } catch {}
+        }
+        startPolling();
+      };
+    } catch {
+      startPolling();
+    }
+
     return () => {
       mounted = false;
-      clearInterval(id);
+      es?.close();
+      if (pollId) clearInterval(pollId);
     };
-  }, [api]);
+  }, [base]);
 
   if (!events.length) return null;
 
