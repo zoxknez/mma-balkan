@@ -44,7 +44,7 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Klubovi', href: '/clubs', icon: MapPin },
     { name: 'Vesti', href: '/news', icon: Newspaper },
     { name: 'Zajednica', href: '/community', icon: MessageCircle },
-    { name: 'Watchlist', href: '/watchlist', icon: User },
+  { name: 'Praćenje', href: '/watchlist', icon: User },
   ];
 
   return (
@@ -187,7 +187,7 @@ export function Layout({ children }: LayoutProps) {
                 />
               </motion.button>
 
-              {/* Neural User Menu */}
+              {/* Korisnički meni */}
               <div className="hidden sm:flex items-center space-x-3">
                 <motion.div
                   initial={{ opacity: 0, x: 10 }}

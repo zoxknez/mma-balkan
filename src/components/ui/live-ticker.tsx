@@ -117,7 +117,7 @@ export function LiveTicker() {
       <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-3 text-sm">
         <span className="inline-flex items-center gap-1 text-red-400 font-semibold">
           <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          LIVE
+          UŽIVO
           <Zap className="w-4 h-4" />
         </span>
         <div className="relative flex-1 overflow-hidden">

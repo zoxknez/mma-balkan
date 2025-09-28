@@ -135,19 +135,19 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
   const prefersReduced = useReducedMotion();
   
   const nodes = useMemo(() => ([
-    { key: 'striking', label: 'Striking', x: 50, y: 20, icon: <Sword className="w-4 h-4" />, color: '#ff3366' },
-    { key: 'grappling', label: 'Grappling', x: 80, y: 40, icon: <Shield className="w-4 h-4" />, color: '#00ccff' },
-    { key: 'cardio', label: 'Cardio', x: 70, y: 80, icon: <TrendingUp className="w-4 h-4" />, color: '#00ff88' },
-    { key: 'power', label: 'Power', x: 20, y: 40, icon: <Zap className="w-4 h-4" />, color: '#ffaa00' },
-    { key: 'defense', label: 'Defense', x: 30, y: 80, icon: <Shield className="w-4 h-4" />, color: '#8B5CF6' },
-    { key: 'aggression', label: 'Aggression', x: 10, y: 65, icon: <Target className="w-4 h-4" />, color: '#EC4899' }
+  { key: 'striking', label: 'Udaranje', x: 50, y: 20, icon: <Sword className="w-4 h-4" />, color: '#ff3366' },
+  { key: 'grappling', label: 'Rvanje', x: 80, y: 40, icon: <Shield className="w-4 h-4" />, color: '#00ccff' },
+  { key: 'cardio', label: 'Kondicija', x: 70, y: 80, icon: <TrendingUp className="w-4 h-4" />, color: '#00ff88' },
+  { key: 'power', label: 'Snaga', x: 20, y: 40, icon: <Zap className="w-4 h-4" />, color: '#ffaa00' },
+  { key: 'defense', label: 'Odbrana', x: 30, y: 80, icon: <Shield className="w-4 h-4" />, color: '#8B5CF6' },
+  { key: 'aggression', label: 'Agresija', x: 10, y: 65, icon: <Target className="w-4 h-4" />, color: '#EC4899' }
   ]), []);
 
   return (
     <div className={`glass-card p-6 ${className}`}>
       <h3 className="text-lg font-bold text-white mb-6 flex items-center">
         <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse" />
-        Neural Combat Analysis
+        Analiza borca
       </h3>
 
       {/* Neural Network Visualization */}
@@ -263,7 +263,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
       {/* Overall Rating */}
       <div className="mt-6 pt-6 border-t border-white/10">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-300">Overall Combat Rating</span>
+          <span className="text-sm text-gray-300">Ukupna ocena</span>
           <div className="flex items-center space-x-2">
             <AnimatedCounter 
               value={Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6)}
@@ -295,7 +295,7 @@ export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
     <div className={`glass-card p-6 ${className}`}>
       <h3 className="text-lg font-bold text-white mb-6 flex items-center">
         <TrendingUp className="w-5 h-5 text-green-400 mr-2" />
-        Fighter Momentum
+  Forma borca
       </h3>
 
       <div className="relative h-48">
@@ -364,15 +364,15 @@ export function MomentumGraph({ data, className = '' }: MomentumGraphProps) {
       <div className="flex justify-center space-x-6 mt-4">
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-green-400 rounded-full" />
-          <span className="text-xs text-gray-300">Win</span>
+          <span className="text-xs text-gray-300">Pobeda</span>
         </div>
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-red-400 rounded-full" />
-          <span className="text-xs text-gray-300">Loss</span>
+          <span className="text-xs text-gray-300">Poraz</span>
         </div>
         <div className="flex items-center space-x-2">
           <div className="w-3 h-3 bg-yellow-400 rounded-full" />
-          <span className="text-xs text-gray-300">Draw</span>
+          <span className="text-xs text-gray-300">Nerešeno</span>
         </div>
       </div>
     </div>

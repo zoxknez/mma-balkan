@@ -13,17 +13,17 @@ import { useCountdown } from '@/hooks/useCountdown';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { useActivity } from '@/hooks/useActivity';
 
-// stari rotirajući avatar uklonjen — koristimo statičan HolographicDisplayLocal sa blagim “breathing” efektom
+// Uklonjen stari rotirajući avatar — zadržan miran avatar sa blagom animacijom
 
 export default function Home() {
   // Mock data za demonstraciju
   const mockFighterStats = {
-    striking: 85,
-    grappling: 78,
-    cardio: 92,
-    power: 88,
-    defense: 75,
-    aggression: 80
+  striking: 85,
+  grappling: 78,
+  cardio: 92,
+  power: 88,
+  defense: 75,
+  aggression: 80
   };
   const eventStartISO = '2025-12-15T19:00:00+01:00';
   const { d, h, m, s } = useCountdown(eventStartISO);
@@ -114,7 +114,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* Featured Fight Card - Ultra Enhanced (spaced from navbar and slightly smaller) */}
+          {/* Istaknuti meč nedelje */}
       <motion.div 
         id="featured"
         className="glass-card p-6 md:p-8 mb-16 mt-10 md:mt-12 holographic relative overflow-hidden max-w-7xl mx-auto px-4"
@@ -131,14 +131,14 @@ export default function Home() {
             animate={{ opacity: [1, 0.5, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            ⚡ FEATURED MEČ NEDELJE ⚡
+            ⚡ Istaknuti meč nedelje ⚡
           </motion.span>
           <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 mb-2">
             SBC 45: Rakić vs. Blachowicz II
           </h2>
           <p className="text-gray-300 mt-2 text-base md:text-lg">15. decembar 2025 • Stark Arena, Beograd</p>
           
-          {/* Live countdown timer */}
+          {/* Odbrojavanje */}
           <motion.div 
             className="mt-4 flex justify-center space-x-4"
             initial={{ opacity: 0 }}
@@ -181,14 +181,14 @@ export default function Home() {
             {/* Quick Stats */}
             <div className="space-y-2">
               <QuantumStatBar 
-                label="Striking" 
+                label="Udaranje" 
                 value={mockFighterStats.striking} 
                 maxValue={100} 
                 color="#00ff88"
                 icon={<Target className="w-4 h-4" />}
               />
               <QuantumStatBar 
-                label="Power" 
+                label="Snaga" 
                 value={mockFighterStats.power} 
                 maxValue={100} 
                 color="#ff3366"

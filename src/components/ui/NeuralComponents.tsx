@@ -17,7 +17,7 @@ export function NeuralSelect({
   options, 
   value, 
   onChange, 
-  placeholder = "Select option...",
+  placeholder = "Izaberi opciju...",
   className = '' 
 }: NeuralSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,7 +68,7 @@ export function NeuralSelect({
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search options..."
+                  placeholder="Pretraga..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:border-green-400 focus:outline-none"
@@ -101,7 +101,7 @@ export function NeuralSelect({
               
               {filteredOptions.length === 0 && (
                 <div className="p-6 text-center text-gray-400">
-                  No options found
+                  Nema rezultata
                 </div>
               )}
             </div>
@@ -133,7 +133,7 @@ interface NeuralSearchProps {
 export function NeuralSearch({ 
   value, 
   onChange, 
-  placeholder = "Search...",
+  placeholder = "Pretraga...",
   suggestions = [],
   onSuggestionClick,
   className = ''
