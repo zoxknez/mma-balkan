@@ -298,12 +298,14 @@ export function Layout({ children }: LayoutProps) {
               {/* Holographic Mobile Menu Button */}
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden relative p-3 text-gray-400 hover:text-green-400 rounded-xl transition-all duration-300 group overflow-hidden"
+                aria-label={isMobileMenuOpen ? 'Zatvori meni' : 'Otvori meni'}
+                aria-expanded={isMobileMenuOpen}
+                className="md:hidden relative p-3 text-gray-300 hover:text-green-400 rounded-xl transition-all duration-300 group overflow-hidden"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 animate={isMobileMenuOpen ? {
                   rotate: 180,
-                  backgroundColor: 'rgba(0, 255, 136, 0.1)'
+                  backgroundColor: 'rgba(0, 255, 136, 0.10)'
                 } : {
                   rotate: 0,
                   backgroundColor: 'transparent'
@@ -312,6 +314,20 @@ export function Layout({ children }: LayoutProps) {
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-blue-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute inset-0 border border-transparent group-hover:border-green-400/30 rounded-xl transition-colors" />
+                {/* Attention halo when closed (mobile) */}
+                {!isMobileMenuOpen && (
+                  <>
+                    <div className="pointer-events-none absolute -inset-3 rounded-2xl bg-green-400/10 blur-lg" />
+                    <motion.div
+                      className="pointer-events-none absolute inset-0 rounded-xl border border-green-400/30"
+                      animate={{ opacity: [0.2, 0.6, 0.2], scale: [1, 1.05, 1] }}
+                      transition={{ duration: 2.2, repeat: Infinity }}
+                    />
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-semibold tracking-wider text-green-400/90">
+                      Meni
+                    </span>
+                  </>
+                )}
                 
                 <AnimatePresence mode="wait">
                   {isMobileMenuOpen ? (
@@ -334,7 +350,7 @@ export function Layout({ children }: LayoutProps) {
                       transition={{ duration: 0.2 }}
                       className="relative z-10"
                     >
-                      <Menu className="w-5 h-5" />
+                      <Menu className="w-5 h-5 drop-shadow-[0_0_6px_#00ff88] text-green-300" />
                     </motion.div>
                   )}
                 </AnimatePresence>
