@@ -1,0 +1,10 @@
+# Normalize EOLs across platforms
+* text=auto eol=lf
+
+# Treat common binary types
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg text
+*.zip binary

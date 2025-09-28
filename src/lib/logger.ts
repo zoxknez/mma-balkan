@@ -5,7 +5,6 @@ const isProd = typeof process !== 'undefined' && process.env.NODE_ENV === 'produ
 function log(level: LogLevel, ...args: unknown[]) {
   if (isProd && level === 'debug') return; // drop debug in prod
   // Still allow warnings/errors in prod for visibility during monitoring
-  // eslint-disable-next-line no-console
   const fn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
   fn(...args);
 }
