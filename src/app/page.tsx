@@ -1,6 +1,4 @@
 'use client';
-
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Trophy, TrendingUp, MapPin, Zap, Target, Shield } from 'lucide-react';
 import { Layout } from '@/components/layout';
@@ -51,36 +49,7 @@ export default function Home() {
   
   return (
     <Layout>
-      {/* Hero */}
-      <section className="relative px-6 pt-24 pb-12">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            className="mb-10"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3">
-              MMA Balkan — Futuristički portal borilačkih sportova
-            </h1>
-            <p className="text-gray-300 max-w-3xl mb-8">
-              Prati borce, događaje i klubove širom regiona. Live ticker, napredne analitike i besprekorno brz UI.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/events">
-                <Button variant="outline">Naredni događaji</Button>
-              </Link>
-              <Link href="/fighters">
-                <Button variant="neon" className="gap-2">
-                  <Zap className="w-5 h-5" /> Istraži borce
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Removed duplicate sections (Uskoro / Trending borci) */}
-        </div>
-      </section>
+      {/* Hero removed per request (title/description/CTAs) */}
 
       {/* Featured Fight Card - Ultra Enhanced */}
       <motion.div 

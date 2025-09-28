@@ -34,6 +34,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# but keep example env files in git
+!**/.env.example
+!.env.example
 
 # large local archives (prevent re-adding)
 Analiza.zip
