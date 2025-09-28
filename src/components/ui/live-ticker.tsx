@@ -67,7 +67,7 @@ export function LiveTicker() {
         } catch {}
       });
       es.addEventListener('tick', () => { /* heartbeat */ });
-      es.onerror = (err) => {
+      es.onerror = () => {
         // Tihi fallback bez spamovanja konzole
         setError('SSE error');
         es?.close();

@@ -88,7 +88,7 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Stat pills */}
+          {/* Stat pills (centered) */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { label: 'Aktivnih članova', value: 14929, suffix: '+', accent: 'from-green-400 to-blue-600' },
@@ -97,19 +97,17 @@ export default function Home() {
             ].map((s, i) => (
               <motion.div
                 key={s.label}
-                className="glass-card p-4 rounded-2xl flex items-center gap-4"
+                className="glass-card p-4 rounded-2xl flex flex-col items-center gap-3 text-center"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.1 }}
                 whileHover={{ scale: 1.02 }}
               >
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${s.accent} opacity-80`} />
-                <div>
-                  <div className="text-xl font-extrabold text-white leading-none">
-                    <AnimatedCounter value={s.value} suffix={s.suffix} />
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${s.accent} opacity-80 mb-1`} />
+                <div className="text-xl font-extrabold text-white leading-none">
+                  <AnimatedCounter value={s.value} suffix={s.suffix} />
                 </div>
+                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
               </motion.div>
             ))}
           </div>

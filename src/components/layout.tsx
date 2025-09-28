@@ -68,10 +68,10 @@ export function Layout({ children }: LayoutProps) {
         />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex h-16 items-center justify-between gap-4 flex-nowrap">
             {/* Ultra-Futuristic Logo */}
             <motion.div 
-              className="flex items-center space-x-3"
+              className="flex items-center space-x-3 shrink-0"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
@@ -91,7 +91,7 @@ export function Layout({ children }: LayoutProps) {
                 
                 {/* Brand Text */}
                 <motion.h1 
-                  className="text-2xl font-bold text-white transition-colors relative"
+                  className="text-2xl font-bold text-white tracking-tight leading-none whitespace-nowrap transition-colors relative"
                   whileHover={{ color: '#86efac' }}
                 >
                   MMA{' '}
@@ -103,7 +103,7 @@ export function Layout({ children }: LayoutProps) {
             </motion.div>
             
             {/* Ultra-Futuristic Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-2">
+            <div className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 justify-center">
               {navigation.map((item, index) => {
                 const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
@@ -116,7 +116,7 @@ export function Layout({ children }: LayoutProps) {
                     <Link
                       href={item.href}
                       className={cn(
-                        'nav-link relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 group overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/50 focus-visible:ring-offset-0',
+                        'nav-link relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 group overflow-hidden whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/50 focus-visible:ring-offset-0',
                         isActive ? 'text-green-300' : 'text-gray-300 hover:text-white'
                       )}
                       aria-current={isActive ? 'page' : undefined}
@@ -160,7 +160,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             {/* Ultra-Futuristic Right Side Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2 shrink-0">
               {/* Quantum Search */}
               <motion.button 
                 aria-label="Pretraga"
@@ -197,7 +197,7 @@ export function Layout({ children }: LayoutProps) {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="relative overflow-hidden border border-transparent hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm"
+                    className="relative overflow-hidden border border-transparent hover:border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm leading-none whitespace-nowrap"
                   >
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-transparent opacity-0 hover:opacity-100 transition-opacity"
@@ -217,7 +217,7 @@ export function Layout({ children }: LayoutProps) {
                   <Button 
                     variant="neon" 
                     size="sm"
-                    className="relative overflow-hidden group"
+                    className="relative overflow-hidden group h-9 px-4 leading-none whitespace-nowrap"
                   >
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 opacity-20"
