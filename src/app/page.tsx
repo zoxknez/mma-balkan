@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CyberGrid } from '@/components/effects/ParticleSystem';
 import { AnimatedCounter, GlitchText } from '@/components/ui/NeuralComponents';
-import { /* NeuralStats, */ QuantumStatBar } from '@/components/ui/QuantumStats';
-import HolographicDisplayLocal from '@/components/effects/HolographicDisplayLocal';
+import { /* DetailedStats, */ StatBar } from '@/components/ui/StatBars';
+import AvatarPrsten from '@/components/effects/AvatarPrsten';
 import { LiveActivityTight } from '@/components/ui/LiveActivityTight';
 import { useCountdown } from '@/hooks/useCountdown';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -166,7 +166,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            <HolographicDisplayLocal 
+            <AvatarPrsten 
               name="Aleksandar Rakić" 
               wins={14} 
               losses={3}
@@ -180,14 +180,14 @@ export default function Home() {
             </div>
             {/* Quick Stats */}
             <div className="space-y-2">
-              <QuantumStatBar 
+              <StatBar 
                 label="Udaranje" 
                 value={mockFighterStats.striking} 
                 maxValue={100} 
                 color="#00ff88"
                 icon={<Target className="w-4 h-4" />}
               />
-              <QuantumStatBar 
+              <StatBar 
                 label="Snaga" 
                 value={mockFighterStats.power} 
                 maxValue={100} 
@@ -215,7 +215,7 @@ export default function Home() {
               Poluteška titula
             </div>
             <div className="glass-card p-4">
-              <div className="text-sm text-gray-400 mb-2">Fight Odds</div>
+              <div className="text-sm text-gray-400 mb-2">Kvote</div>
               <div className="flex justify-center space-x-4">
                 <div className="text-center">
                   <div className="text-green-400 font-bold">-150</div>
@@ -236,7 +236,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            <HolographicDisplayLocal 
+            <AvatarPrsten 
               name="Jan Błachowicz" 
               wins={29} 
               losses={10}
@@ -250,15 +250,15 @@ export default function Home() {
             </div>
             {/* Quick Stats */}
             <div className="space-y-2">
-              <QuantumStatBar 
-                label="Defense" 
+              <StatBar 
+                label="Odbrana" 
                 value={82} 
                 maxValue={100} 
                 color="#00ccff"
                 icon={<Shield className="w-4 h-4" />}
               />
-              <QuantumStatBar 
-                label="Experience" 
+              <StatBar 
+                label="Iskustvo" 
                 value={95} 
                 maxValue={100} 
                 color="#8B5CF6"
@@ -319,7 +319,7 @@ export default function Home() {
       >
         <h3 className="text-3xl font-bold text-white mb-8 flex items-center">
           <TrendingUp className="w-8 h-8 text-green-400 mr-3" />
-          Trending borci
+          Popularni borci
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
