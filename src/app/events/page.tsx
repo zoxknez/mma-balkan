@@ -6,7 +6,8 @@ import { Calendar, MapPin, Users, Trophy, Zap, Target, Activity, Filter } from '
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
+import { SelectMenu } from '@/components/ui/UIPrimitives';
 import { useEvents } from '@/hooks/useEvents';
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -183,7 +184,7 @@ export default function EventsPage() {
                 transition={{ duration: 3, repeat: Infinity }}
               >
                 <GlitchText
-                  text="📅 BALKAN COMBAT EVENTS 📅"
+                  text="📅 BALKANSKI MMA DOGAĐAJI 📅"
                   className="text-5xl font-bold mb-6"
                 />
               </motion.div>
@@ -194,15 +195,15 @@ export default function EventsPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Neural kalendar najvažnijih MMA događaja na Balkanu.
-                Live praćenje, analize i ekskluzivne informacije.
+                Kalendar najvažnijih MMA događaja na Balkanu.
+                Praćenje uživo, analize i ekskluzivne informacije.
               </motion.p>
               
               {/* Stats Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 {[
                   { icon: <Calendar className="w-8 h-8" />, value: filteredEvents.length, label: "Događaja", color: "#8b5cf6" },
-                  { icon: <Activity className="w-8 h-8" />, value: filteredEvents.filter(e => e.status === 'live').length, label: "Live sada", color: "#ef4444" },
+                  { icon: <Activity className="w-8 h-8" />, value: filteredEvents.filter(e => e.status === 'live').length, label: "Sada uživo", color: "#ef4444" },
                   { icon: <Trophy className="w-8 h-8" />, value: filteredEvents.filter(e => e.status === 'upcoming').length, label: "Nadolazeći", color: "#3b82f6" },
                   { icon: <Users className="w-8 h-8" />, value: filteredEvents.reduce((sum, e) => sum + (e.attendees ?? 0), 0), label: "Ukupno gledalaca", color: "#10b981" }
                 ].map((stat, index) => (
@@ -242,11 +243,11 @@ export default function EventsPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
                       <Target className="w-6 h-6 mr-3 text-purple-500" />
-                      Event Control Matrix
+                      Kontrola događaja
                     </h2>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse" />
-                      <span className="text-purple-400 text-sm font-medium">LIVE TRACKING</span>
+                      <span className="text-purple-400 text-sm font-medium">UŽIVO</span>
                     </div>
                   </div>
                   
@@ -261,15 +262,15 @@ export default function EventsPage() {
                       <div className="relative glass-card p-4 border border-purple-400/30">
                         <label className="flex items-center text-sm font-medium text-purple-400 mb-2">
                           <Filter className="w-4 h-4 mr-2" />
-                          Event Status
+                          Status događaja
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={filterStatus}
                           onChange={(value) => setFilterStatus(value as 'all' | 'upcoming' | 'live' | 'completed')}
                           options={[
                             { value: 'all', label: 'Svi događaji' },
                             { value: 'upcoming', label: 'Nadolazeći' },
-                            { value: 'live', label: 'Live sada' },
+                            { value: 'live', label: 'Uživo' },
                             { value: 'completed', label: 'Završeni' }
                           ]}
                           className="w-full"
@@ -287,15 +288,15 @@ export default function EventsPage() {
                       <div className="relative glass-card p-4 border border-blue-400/30">
                         <label className="flex items-center text-sm font-medium text-blue-400 mb-2">
                           <Calendar className="w-4 h-4 mr-2" />
-                          Sort Protocol
+                          Sortiranje
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={sortBy}
                           onChange={(value) => setSortBy(value as 'date' | 'name' | 'venue')}
                           options={[
-                            { value: 'date', label: 'Chronological' },
-                            { value: 'name', label: 'Alpha Protocol' },
-                            { value: 'venue', label: 'Location Matrix' }
+                            { value: 'date', label: 'Hronološki' },
+                            { value: 'name', label: 'Po nazivu' },
+                            { value: 'venue', label: 'Po gradu' }
                           ]}
                           className="w-full"
                         />
@@ -313,7 +314,7 @@ export default function EventsPage() {
                     <div className="inline-flex items-center space-x-2 glass-card px-6 py-3 border border-purple-400/30">
                       <Activity className="w-5 h-5 text-purple-400" />
                       <span className="text-white font-medium">
-                        Neural scan rezultat: 
+                        Broj pronađenih događaja: 
                       </span>
                       <span className="text-purple-400 font-bold text-xl">
                         <AnimatedCounter value={filteredEvents.length} />
@@ -345,7 +346,7 @@ export default function EventsPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Zap className="w-8 h-8 mr-3 text-purple-500" />
-                  COMBAT CALENDAR
+                  KALENDAR DOGAĐAJA
                   <Zap className="w-8 h-8 ml-3 text-purple-500" />
                 </motion.h3>
                 <div className="w-32 h-1 bg-gradient-to-r from-purple-500 to-blue-500 mx-auto rounded-full" />
@@ -397,11 +398,11 @@ export default function EventsPage() {
                       <CyberGrid />
                       
                       <div className="relative z-10">
-                        {/* Status Badge */}
+                        {/* Značka statusa */}
                         <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-4 ${getStatusBg(event.status)}`}>
                           <div className={`w-2 h-2 rounded-full mr-2 ${event.status === 'live' ? 'animate-pulse bg-red-500' : ''} ${event.status === 'upcoming' ? 'bg-blue-500' : ''} ${event.status === 'completed' ? 'bg-green-500' : ''}`} />
                           <span className={getStatusColor(event.status)}>
-                            {event.status === 'live' ? 'LIVE SADA' : event.status === 'upcoming' ? 'NADOLAZEĆI' : 'ZAVRŠEN'}
+                            {event.status === 'live' ? 'UŽIVO' : event.status === 'upcoming' ? 'NADOLAZEĆI' : 'ZAVRŠEN'}
                           </span>
                         </div>
                         
@@ -410,9 +411,9 @@ export default function EventsPage() {
                           {event.name}
                         </h3>
                         
-                        {/* Main Event */}
+                        {/* Glavna borba */}
                         <div className="bg-gray-800/50 rounded-lg p-3 mb-4 border border-purple-400/20">
-                          <div className="text-xs text-purple-400 font-medium mb-1">MAIN EVENT</div>
+                          <div className="text-xs text-purple-400 font-medium mb-1">GLAVNA BORBA</div>
                           <div className="text-white font-semibold">{event.mainEvent}</div>
                         </div>
                         
@@ -440,7 +441,7 @@ export default function EventsPage() {
                           </div>
                           <div className="bg-gray-800/30 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-purple-400">
-                              {event.status === 'live' ? 'LIVE' : event.status === 'upcoming' ? 'SOON' : 'DONE'}
+                              {event.status === 'live' ? 'UŽIVO' : event.status === 'upcoming' ? 'USKORO' : 'ZAVRŠEN'}
                             </div>
                             <div className="text-xs text-gray-400">Status</div>
                           </div>
@@ -461,7 +462,7 @@ export default function EventsPage() {
                                   ease: "linear"
                                 }}
                               />
-                              <span className="relative z-10 font-semibold">Gledaj LIVE</span>
+                              <span className="relative z-10 font-semibold">Gledaj uživo</span>
                             </Button>
                           )}
                           
@@ -532,14 +533,9 @@ export default function EventsPage() {
                       </div>
                     </motion.div>
                     
-                    <GlitchText
-                      text="EVENT MATRIX EMPTY"
-                      className="text-2xl font-bold mb-4"
-                    />
+                    <GlitchText text="NEMA DOGAĐAJA" className="text-2xl font-bold mb-4" />
                     
-                    <p className="text-gray-400 text-lg mb-8">
-                      Neural scan nije pronašao događaje sa zadatim filterima
-                    </p>
+                    <p className="text-gray-400 text-lg mb-8">Nema događaja za zadate filtere</p>
                     
                     <Button 
                       variant="neon" 
@@ -553,7 +549,7 @@ export default function EventsPage() {
                         className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-500 opacity-20"
                         whileHover={{ opacity: 0.4 }}
                       />
-                      <span className="relative z-10 font-semibold">Resetuj neural filtere</span>
+                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
                     </Button>
                   </div>
                 </div>

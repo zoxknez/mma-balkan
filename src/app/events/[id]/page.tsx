@@ -17,6 +17,7 @@ import { Countdown } from '@/components/ui/countdown';
 import { WatchlistButton } from '../../../components/ui/watchlist-button';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { buildICS, downloadICS } from '@/lib/ics';
+import { prettyEventStatus } from '@/lib/utils';
 
 export default function EventDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -74,7 +75,7 @@ export default function EventDetailsPage() {
                       <span className={
                         e.status === 'LIVE' ? 'text-red-400' : e.status === 'COMPLETED' ? 'text-green-400' : 'text-blue-400'
                       }>
-                        {e.status}
+                        {prettyEventStatus(e.status)}
                       </span>
                     </div>
                     <div className="text-gray-400 text-xs">{e.fightsCount} borbi</div>
@@ -93,8 +94,8 @@ export default function EventDetailsPage() {
                 <div className="text-gray-400 text-xs mt-1">Predikcija posete</div>
               </div>
               <div className="glass-card p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-2"><Trophy className="w-5 h-5" /> Main event</div>
-                <div className="text-white text-sm mt-1">{e.mainEvent ?? 'TBA'}</div>
+                <div className="text-2xl font-bold text-yellow-400 flex items-center justify-center gap-2"><Trophy className="w-5 h-5" /> Glavna borba</div>
+                <div className="text-white text-sm mt-1">{e.mainEvent ? e.mainEvent : 'Biće objavljeno'}</div>
               </div>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-purple-400 flex items-center justify-center gap-2"><Activity className="w-5 h-5" /> Status</div>
@@ -107,7 +108,7 @@ export default function EventDetailsPage() {
             <div className="mt-8 flex gap-3">
               {e.status === 'LIVE' && (
                 <Button variant="neon" className="relative overflow-hidden">
-                  <Zap className="w-4 h-4 mr-2" /> Gledaj LIVE
+                  <Zap className="w-4 h-4 mr-2" /> Gledaj uživo
                 </Button>
               )}
               <Button
@@ -135,7 +136,7 @@ export default function EventDetailsPage() {
 
           {/* Fight Card */}
           <div className="mt-10">
-            <h2 className="text-white font-semibold mb-3">Fight card</h2>
+            <h2 className="text-white font-semibold mb-3">Karta borbi</h2>
             <div className="glass-card p-4">
               {loadingFights ? (
                 <div className="space-y-3">
@@ -145,24 +146,24 @@ export default function EventDetailsPage() {
                 </div>
               ) : fights.length ? (
                 <ul className="divide-y divide-white/5">
-                  {/* Main Card */}
+                  {/* Glavni program */}
                   {fights.filter(f => f.section === 'MAIN').map((f) => (
                     <li key={f.id} className="py-3 flex items-center justify-between">
                       <div className="text-sm text-gray-200">
                         <span className="text-gray-400 mr-2">#{f.orderNo}</span>
-                        <span className="text-orange-300">{f.weightClass ?? 'Catchweight'}</span>
+                        <span className="text-orange-300">{f.weightClass ?? 'Bez kategorije'}</span>
                       </div>
                       <div className="flex-1 text-center text-white font-medium">
                         {f.redFighter?.id ? (
                           <Link className="hover:text-orange-300 transition-colors" href={`/fighters/${f.redFighter.id}`} onMouseEnter={() => prefetch(`/fighters/${f.redFighter!.id}`)}>{f.redFighter.name}</Link>
                         ) : (
-                          <span>TBA</span>
+                          <span>Biće objavljeno</span>
                         )}
-                        <span className="text-gray-400 mx-1">vs</span>
+                        <span className="text-gray-400 mx-1">protiv</span>
                         {f.blueFighter?.id ? (
                           <Link className="hover:text-orange-300 transition-colors" href={`/fighters/${f.blueFighter.id}`} onMouseEnter={() => prefetch(`/fighters/${f.blueFighter!.id}`)}>{f.blueFighter.name}</Link>
                         ) : (
-                          <span>TBA</span>
+                          <span>Biće objavljeno</span>
                         )}
                       </div>
                       <div className="text-xs text-gray-300 w-40 text-right">
@@ -172,31 +173,31 @@ export default function EventDetailsPage() {
                             <span className="text-gray-400">{f.round ? `R${f.round}` : ''} {f.time ?? ''}</span>
                           </div>
                         ) : (
-                          <span className="text-blue-400">{f.status}</span>
+                          <span className="text-blue-400">{f.status === 'LIVE' ? 'Uživo' : f.status === 'SCHEDULED' ? 'Zakazana' : f.status}</span>
                         )}
                       </div>
                     </li>
                   ))}
-                  {/* Prelims Header */}
-                  <li className="py-2 text-xs uppercase tracking-wider text-gray-400">Prelims</li>
-                  {/* Prelims Card */}
+                  {/* Uvodni program */}
+                  <li className="py-2 text-xs uppercase tracking-wider text-gray-400">Uvodni program</li>
+                  {/* Uvodne borbe */}
                   {fights.filter(f => f.section !== 'MAIN').map((f) => (
                     <li key={f.id} className="py-3 flex items-center justify-between">
                       <div className="text-sm text-gray-200">
                         <span className="text-gray-400 mr-2">#{f.orderNo}</span>
-                        <span className="text-orange-300">{f.weightClass ?? 'Catchweight'}</span>
+                        <span className="text-orange-300">{f.weightClass ?? 'Bez kategorije'}</span>
                       </div>
                       <div className="flex-1 text-center text-white font-medium">
                         {f.redFighter?.id ? (
                           <Link className="hover:text-orange-300 transition-colors" href={`/fighters/${f.redFighter.id}`}>{f.redFighter.name}</Link>
                         ) : (
-                          <span>TBA</span>
+                          <span>Biće objavljeno</span>
                         )}
-                        <span className="text-gray-400 mx-1">vs</span>
+                        <span className="text-gray-400 mx-1">protiv</span>
                         {f.blueFighter?.id ? (
                           <Link className="hover:text-orange-300 transition-colors" href={`/fighters/${f.blueFighter.id}`}>{f.blueFighter.name}</Link>
                         ) : (
-                          <span>TBA</span>
+                          <span>Biće objavljeno</span>
                         )}
                       </div>
                       <div className="text-xs text-gray-300 w-40 text-right">
@@ -206,7 +207,7 @@ export default function EventDetailsPage() {
                             <span className="text-gray-400">{f.round ? `R${f.round}` : ''} {f.time ?? ''}</span>
                           </div>
                         ) : (
-                          <span className="text-blue-400">{f.status}</span>
+                          <span className="text-blue-400">{f.status === 'LIVE' ? 'Uživo' : f.status === 'SCHEDULED' ? 'Zakazana' : f.status}</span>
                         )}
                       </div>
                     </li>

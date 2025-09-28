@@ -10,6 +10,7 @@ import { ArrowLeft, Calendar, MapPin, Activity, Sword, Shield, Trophy } from 'lu
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFighterHistory, useFighterUpcoming } from '@/hooks/useFights';
 import { MethodBadge } from '@/components/fights/MethodBadge';
+import { prettyStance, prettyWeightClass } from '@/lib/utils';
 import { ShareButton } from '@/components/ui/share-button';
 import Link from 'next/link';
 import { usePrefetch } from '@/lib/prefetch';
@@ -68,8 +69,8 @@ export default function FighterDetailsPage() {
                     <div className="text-gray-300 text-sm flex items-center gap-3 mt-1">
                       <MapPin className="w-4 h-4 text-blue-400" /> {f.country}
                       <span>•</span>
-                      <Sword className="w-4 h-4 text-red-400" /> {f.weightClass}
-                      {f.stance ? (<><span>•</span><Shield className="w-4 h-4 text-green-400" /> {f.stance}</>) : null}
+                      <Sword className="w-4 h-4 text-red-400" /> {prettyWeightClass(String(f.weightClass))}
+                      {f.stance ? (<><span>•</span><Shield className="w-4 h-4 text-green-400" /> {prettyStance(String(f.stance))}</>) : null}
                     </div>
                   </div>
                 </div>
@@ -147,13 +148,13 @@ export default function FighterDetailsPage() {
                           <span className="text-white">
                             {fi.redFighter?.id ? (
                               <Link href={`/fighters/${fi.redFighter.id}`} className="hover:text-orange-300" onMouseEnter={() => prefetch(`/fighters/${fi.redFighter!.id}`)}>{fi.redFighter.name}</Link>
-                            ) : 'TBA'}
+                            ) : 'Biće objavljeno'}
                             <span className="text-gray-400"> vs </span>
                             {fi.blueFighter?.id ? (
                               <Link href={`/fighters/${fi.blueFighter.id}`} className="hover:text-orange-300" onMouseEnter={() => prefetch(`/fighters/${fi.blueFighter!.id}`)}>{fi.blueFighter.name}</Link>
-                            ) : 'TBA'}
+                            ) : 'Biće objavljeno'}
                           </span>
-                          <span className="text-xs text-gray-400">{fi.weightClass ?? 'Catchweight'}</span>
+                          <span className="text-xs text-gray-400">{fi.weightClass ? prettyWeightClass(String(fi.weightClass)) : 'Bez kategorije'}</span>
                         </li>
                       ))}
                     </ul>

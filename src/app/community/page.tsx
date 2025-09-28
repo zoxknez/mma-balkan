@@ -6,7 +6,8 @@ import { MessageCircle, Users, Heart, Share2, TrendingUp, Hash, Zap, Target, Act
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
+import { SelectMenu } from '@/components/ui/UIPrimitives';
 
 // Mock data za community posts
 const mockPosts = [
@@ -230,17 +231,17 @@ export default function CommunityPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Neural social network za Balkansku MMA zajednicu.
-                Deli iskustva, analize i povezuj se sa borcima iz regiona.
+                Društveni centar balkanske MMA zajednice.
+                Deli iskustva, analize i poveži se sa borcima iz regiona.
               </motion.p>
               
               {/* Stats Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 {[
                   { icon: <Users className="w-8 h-8" />, value: 15247, label: "Aktivnih članova", color: "#ec4899" },
-                  { icon: <MessageCircle className="w-8 h-8" />, value: filteredPosts.length, label: "Live postova", color: "#8b5cf6" },
+                  { icon: <MessageCircle className="w-8 h-8" />, value: filteredPosts.length, label: "Objava uživo", color: "#8b5cf6" },
                   { icon: <Heart className="w-8 h-8" />, value: mockPosts.reduce((sum, p) => sum + p.likes, 0), label: "Ukupno lajkova", color: "#ef4444" },
-                  { icon: <TrendingUp className="w-8 h-8" />, value: mockPosts.filter(p => p.trending).length, label: "Trending sada", color: "#f59e0b" }
+                  { icon: <TrendingUp className="w-8 h-8" />, value: mockPosts.filter(p => p.trending).length, label: "U trendu", color: "#f59e0b" }
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
@@ -324,11 +325,11 @@ export default function CommunityPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
                       <Target className="w-6 h-6 mr-3 text-pink-500" />
-                      Community Intelligence
+                      Kontrola feeda
                     </h2>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-pink-400 rounded-full animate-pulse" />
-                      <span className="text-pink-400 text-sm font-medium">LIVE FEED</span>
+                      <span className="text-pink-400 text-sm font-medium">UŽIVO</span>
                     </div>
                   </div>
                   
@@ -343,7 +344,7 @@ export default function CommunityPage() {
                       <div className="relative glass-card p-4 border border-pink-400/30">
                         <label className="flex items-center text-sm font-medium text-pink-400 mb-2">
                           <Search className="w-4 h-4 mr-2" />
-                          Social Search
+                          Pretraga
                         </label>
                         <div className="relative">
                           <input
@@ -374,9 +375,9 @@ export default function CommunityPage() {
                       <div className="relative glass-card p-4 border border-purple-400/30">
                         <label className="flex items-center text-sm font-medium text-purple-400 mb-2">
                           <Filter className="w-4 h-4 mr-2" />
-                          Content Type
+                          Vrsta sadržaja
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={selectedType}
                           onChange={(value) => setSelectedType(value)}
                           options={[
@@ -402,15 +403,15 @@ export default function CommunityPage() {
                       <div className="relative glass-card p-4 border border-red-400/30">
                         <label className="flex items-center text-sm font-medium text-red-400 mb-2">
                           <TrendingUp className="w-4 h-4 mr-2" />
-                          Feed Algorithm
+                          Sortiranje
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={sortBy}
                           onChange={(value) => setSortBy(value as 'timestamp' | 'likes' | 'comments')}
                           options={[
-                            { value: 'timestamp', label: 'Latest First' },
-                            { value: 'likes', label: 'Most Liked' },
-                            { value: 'comments', label: 'Most Discussed' }
+                            { value: 'timestamp', label: 'Najnovije' },
+                            { value: 'likes', label: 'Po lajkovima' },
+                            { value: 'comments', label: 'Po komentarima' }
                           ]}
                           className="w-full"
                         />
@@ -441,7 +442,7 @@ export default function CommunityPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Zap className="w-8 h-8 mr-3 text-pink-500" />
-                  COMMUNITY FEED
+                  OBJAVE ZAJEDNICE
                   <Zap className="w-8 h-8 ml-3 text-pink-500" />
                 </motion.h3>
                 <div className="w-32 h-1 bg-gradient-to-r from-pink-500 to-purple-500 mx-auto rounded-full" />
@@ -513,7 +514,7 @@ export default function CommunityPage() {
                             {post.trending && (
                               <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 border border-red-500/30 text-red-400">
                                 <TrendingUp className="w-3 h-3 mr-1" />
-                                HOT
+                                U TRENDU
                               </div>
                             )}
                           </div>
@@ -661,14 +662,9 @@ export default function CommunityPage() {
                       </div>
                     </motion.div>
                     
-                    <GlitchText
-                      text="COMMUNITY FEED EMPTY"
-                      className="text-2xl font-bold mb-4"
-                    />
+                    <GlitchText text="NEMA OBJAVA" className="text-2xl font-bold mb-4" />
                     
-                    <p className="text-gray-400 text-lg mb-8">
-                      Neural feed je prazan sa zadatim filterima
-                    </p>
+                    <p className="text-gray-400 text-lg mb-8">Nema objava za zadate filtere</p>
                     
                     <Button 
                       variant="neon" 
@@ -683,7 +679,7 @@ export default function CommunityPage() {
                         className="absolute inset-0 bg-gradient-to-r from-pink-400 to-purple-500 opacity-20"
                         whileHover={{ opacity: 0.4 }}
                       />
-                      <span className="relative z-10 font-semibold">Resetuj community filtere</span>
+                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
                     </Button>
                   </div>
                 </div>

@@ -6,7 +6,8 @@ import { Newspaper, Clock, User, Eye, Share2, Bookmark, TrendingUp, Zap, Target,
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
+import { SelectMenu } from '@/components/ui/UIPrimitives';
 import { useNews } from '@/hooks/useNews';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -76,7 +77,7 @@ const mockNews = [
     title: 'Ženske MMA na Balkanu: Nova generacija borki osvaja svetsku scenu',
     excerpt: 'Sve više balkanskih borki uspešno se takmiči na međunarodnom nivou. Analiza fenomena i prognoze za budućnost.',
     content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-    category: 'Women MMA',
+    category: 'Žene u MMA',
     author: 'Milica Stojanović',
     publishDate: '2025-09-22T11:10:00Z',
     views: 7890,
@@ -87,7 +88,7 @@ const mockNews = [
   }
 ];
 
-const categories = ['Sve', 'Intervjui', 'Organizacije', 'Analize', 'Transfer', 'Women MMA', 'Training', 'Events'];
+const categories = ['Sve', 'Intervjui', 'Organizacije', 'Analize', 'Transfer', 'Žene u MMA', 'Treninzi', 'Događaji'];
 
 export default function NewsPage() {
   const prefetch = usePrefetch();
@@ -172,9 +173,9 @@ export default function NewsPage() {
       'Organizacije': 'text-blue-400',
       'Analize': 'text-purple-400',
       'Transfer': 'text-orange-400',
-      'Women MMA': 'text-pink-400',
-      'Training': 'text-yellow-400',
-      'Events': 'text-red-400'
+      'Žene u MMA': 'text-pink-400',
+      'Treninzi': 'text-yellow-400',
+      'Događaji': 'text-red-400'
     };
     return colors[category] || 'text-gray-400';
   };
@@ -241,7 +242,7 @@ export default function NewsPage() {
                 transition={{ duration: 3, repeat: Infinity }}
               >
                 <GlitchText
-                  text="📰 BALKAN MMA NEWS MATRIX 📰"
+                  text="📰 BALKANSKE MMA VESTI 📰"
                   className="text-5xl font-bold mb-6"
                 />
               </motion.div>
@@ -252,15 +253,15 @@ export default function NewsPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Neural news agregator sa najsvežijim informacijama iz sveta Balkanske MMA scene.
-                Ekskluzivni intervjui, analize i breaking news u real-time-u.
+                Agregator vesti sa najsvežijim informacijama iz sveta balkanske MMA scene.
+                Ekskluzivni intervjui, analize i brze vesti u realnom vremenu.
               </motion.p>
               
               {/* Stats Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 {[
                   { icon: <Newspaper className="w-8 h-8" />, value: filteredNews.length, label: "Aktuelnih vesti", color: "#f97316" },
-                  { icon: <TrendingUp className="w-8 h-8" />, value: filteredNews.filter(n => n.trending).length, label: "Trending sada", color: "#ef4444" },
+                  { icon: <TrendingUp className="w-8 h-8" />, value: filteredNews.filter(n => n.trending).length, label: "U trendu", color: "#ef4444" },
                   { icon: <Eye className="w-8 h-8" />, value: Math.floor(baseNews.reduce((sum, n) => sum + n.views, 0) / 1000), label: "K pregleda", color: "#3b82f6" },
                   { icon: <User className="w-8 h-8" />, value: 47, label: "Aktivnih autora", color: "#10b981" }
                 ].map((stat, index) => (
@@ -300,16 +301,16 @@ export default function NewsPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
                       <Target className="w-6 h-6 mr-3 text-orange-500" />
-                      News Intelligence System
+                      Sistem za vesti
                     </h2>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" />
-                      <span className="text-orange-400 text-sm font-medium">LIVE FEED</span>
+                      <span className="text-orange-400 text-sm font-medium">UŽIVO</span>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Neural Search */}
+                    {/* Pretraga */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -319,7 +320,7 @@ export default function NewsPage() {
                       <div className="relative glass-card p-4 border border-orange-400/30">
                         <label className="flex items-center text-sm font-medium text-orange-400 mb-2">
                           <Search className="w-4 h-4 mr-2" />
-                          Neural Search
+                          Pretraga
                         </label>
                         <div className="relative">
                           <input
@@ -340,7 +341,7 @@ export default function NewsPage() {
                       </div>
                     </motion.div>
 
-                    {/* Category Filter */}
+                    {/* Filter kategorija */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -350,9 +351,9 @@ export default function NewsPage() {
                       <div className="relative glass-card p-4 border border-red-400/30">
                         <label className="flex items-center text-sm font-medium text-red-400 mb-2">
                           <Filter className="w-4 h-4 mr-2" />
-                          News Category
+                          Kategorija
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={selectedCategory}
                           onChange={(value) => setSelectedCategory(value)}
                           options={categories.map(cat => ({ value: cat, label: cat }))}
@@ -361,7 +362,7 @@ export default function NewsPage() {
                       </div>
                     </motion.div>
 
-                    {/* Sort Algorithm */}
+                    {/* Sortiranje */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -371,15 +372,15 @@ export default function NewsPage() {
                       <div className="relative glass-card p-4 border border-yellow-400/30">
                         <label className="flex items-center text-sm font-medium text-yellow-400 mb-2">
                           <TrendingUp className="w-4 h-4 mr-2" />
-                          Priority Matrix
+                          Prioritet
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={sortBy}
                           onChange={(value) => setSortBy(value as 'date' | 'views' | 'likes')}
                           options={[
-                            { value: 'date', label: 'Chronological' },
-                            { value: 'views', label: 'Popularity Index' },
-                            { value: 'likes', label: 'Engagement Score' }
+                            { value: 'date', label: 'Hronološki' },
+                            { value: 'views', label: 'Po pregledima' },
+                            { value: 'likes', label: 'Po sviđanjima' }
                           ]}
                           className="w-full"
                         />
@@ -397,7 +398,7 @@ export default function NewsPage() {
                     <div className="inline-flex items-center space-x-2 glass-card px-6 py-3 border border-orange-400/30">
                       <Activity className="w-5 h-5 text-orange-400" />
                       <span className="text-white font-medium">
-                        News agregat rezultat: 
+                        Ukupno pronađenih vesti:
                       </span>
                       <span className="text-orange-400 font-bold text-xl">
                         <AnimatedCounter value={filteredNews.length} />
@@ -430,7 +431,7 @@ export default function NewsPage() {
                     transition={{ duration: 2, repeat: Infinity }}
                   >
                     <Zap className="w-8 h-8 mr-3 text-orange-500" />
-                    FEATURED STORY
+                    ISTAKNUTA PRIČA
                     <Zap className="w-8 h-8 ml-3 text-orange-500" />
                   </motion.h3>
                   <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full" />
@@ -458,7 +459,7 @@ export default function NewsPage() {
                               {featured.trending && (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 border border-red-500/30 text-red-400">
                                   <TrendingUp className="w-3 h-3 mr-1" />
-                                  TRENDING
+                                  U TRENDU
                                 </span>
                               )}
                             </div>
@@ -560,7 +561,7 @@ export default function NewsPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Newspaper className="w-8 h-8 mr-3 text-orange-500" />
-                  LATEST INTEL
+                  NAJSKORIJE VESTI
                   <Newspaper className="w-8 h-8 ml-3 text-orange-500" />
                 </motion.h3>
                 <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full" />
@@ -610,7 +611,7 @@ export default function NewsPage() {
                           {article.trending && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-500/20 border border-red-500/30 text-red-400">
                               <TrendingUp className="w-3 h-3 mr-1" />
-                              HOT
+                              U TRENDU
                             </span>
                           )}
                         </div>
@@ -735,12 +736,12 @@ export default function NewsPage() {
                     </motion.div>
                     
                     <GlitchText
-                      text="NEWS FEED EMPTY"
+                      text="NEMA PRIKAZA VESTI"
                       className="text-2xl font-bold mb-4"
                     />
                     
                     <p className="text-gray-400 text-lg mb-8">
-                      Neural agregator nije pronašao vesti sa zadatim filterima
+                      Agregator vesti nije pronašao rezultate za zadate filtere
                     </p>
                     
                     <Button 
@@ -756,7 +757,7 @@ export default function NewsPage() {
                         className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 opacity-20"
                         whileHover={{ opacity: 0.4 }}
                       />
-                      <span className="relative z-10 font-semibold">Resetuj news filtere</span>
+                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
                     </Button>
                   </div>
                 </div>

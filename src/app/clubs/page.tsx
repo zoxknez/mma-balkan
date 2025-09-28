@@ -6,7 +6,8 @@ import { MapPin, Users, Trophy, Star, Phone, Mail, Globe, Shield, Zap, Target, A
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
+import { SelectMenu } from '@/components/ui/UIPrimitives';
 import { useClubs } from '@/hooks/useClubs';
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -157,8 +158,8 @@ export default function ClubsPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Neural mapa najelitijih MMA klubova i akademija na Balkanu.
-                Pronađi svoju battlefield akademiju i pridruži se legendi.
+                Mapa najelitnijih MMA klubova i akademija na Balkanu.
+                Pronađi svoj klub i pridruži se ekipi.
               </motion.p>
               
               {/* Stats Overview */}
@@ -205,11 +206,11 @@ export default function ClubsPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
                       <Target className="w-6 h-6 mr-3 text-cyan-500" />
-                      Academy Locator System
+                      Sistem za klubove
                     </h2>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse" />
-                      <span className="text-cyan-400 text-sm font-medium">LIVE MAP</span>
+                      <span className="text-cyan-400 text-sm font-medium">UŽIVO</span>
                     </div>
                   </div>
                   
@@ -224,7 +225,7 @@ export default function ClubsPage() {
                       <div className="relative glass-card p-4 border border-cyan-400/30">
                         <label className="flex items-center text-sm font-medium text-cyan-400 mb-2">
                           <Search className="w-4 h-4 mr-2" />
-                          Academy Search
+                          Pretraga
                         </label>
                         <div className="relative">
                           <input
@@ -255,9 +256,9 @@ export default function ClubsPage() {
                       <div className="relative glass-card p-4 border border-blue-400/30">
                         <label className="flex items-center text-sm font-medium text-blue-400 mb-2">
                           <MapPin className="w-4 h-4 mr-2" />
-                          Region Filter
+                          Region
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={selectedCountry}
                           onChange={(value) => setSelectedCountry(value)}
                           options={countries.map(country => ({ 
@@ -279,9 +280,9 @@ export default function ClubsPage() {
                       <div className="relative glass-card p-4 border border-purple-400/30">
                         <label className="flex items-center text-sm font-medium text-purple-400 mb-2">
                           <Filter className="w-4 h-4 mr-2" />
-                          Combat Style
+                          Disciplina
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={selectedSpecialty}
                           onChange={(value) => setSelectedSpecialty(value)}
                           options={specialties.map(spec => ({ value: spec, label: spec }))}
@@ -300,16 +301,16 @@ export default function ClubsPage() {
                       <div className="relative glass-card p-4 border border-green-400/30">
                         <label className="flex items-center text-sm font-medium text-green-400 mb-2">
                           <Trophy className="w-4 h-4 mr-2" />
-                          Rank Protocol
+                          Sortiranje
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={sortBy}
                           onChange={(value) => setSortBy(value as 'name' | 'members' | 'rating' | 'founded')}
                           options={[
-                            { value: 'rating', label: 'Elite Rating' },
-                            { value: 'members', label: 'Member Count' },
-                            { value: 'name', label: 'Alpha Sort' },
-                            { value: 'founded', label: 'Establishment' }
+                            { value: 'rating', label: 'Po rejtingu' },
+                            { value: 'members', label: 'Po članovima' },
+                            { value: 'name', label: 'Po nazivu' },
+                            { value: 'founded', label: 'Po osnivanju' }
                           ]}
                           className="w-full"
                         />
@@ -327,7 +328,7 @@ export default function ClubsPage() {
                     <div className="inline-flex items-center space-x-2 glass-card px-6 py-3 border border-cyan-400/30">
                       <Activity className="w-5 h-5 text-cyan-400" />
                       <span className="text-white font-medium">
-                        Academy scan rezultat: 
+                        Ukupno pronađenih klubova:
                       </span>
                       <span className="text-cyan-400 font-bold text-xl">
                         <AnimatedCounter value={filteredClubs.length} />
@@ -359,7 +360,7 @@ export default function ClubsPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Zap className="w-8 h-8 mr-3 text-cyan-500" />
-                  ELITE ACADEMIES
+                  ELITNE AKADEMIJE
                   <Zap className="w-8 h-8 ml-3 text-cyan-500" />
                 </motion.h3>
                 <div className="w-32 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 mx-auto rounded-full" />
@@ -429,7 +430,7 @@ export default function ClubsPage() {
                               <span>Osnovan —</span>
                               <div className="flex items-center">
                                 <Star className="w-4 h-4 mr-1 text-yellow-400 fill-current" />
-                                <span className="text-yellow-400 font-bold">—</span>
+                                  <span className="text-yellow-400 font-bold">Prosečna ocena —</span>
                               </div>
                             </div>
                           </div>
@@ -458,7 +459,7 @@ export default function ClubsPage() {
                         
                         {/* Specialties placeholder */}
                         <div className="mb-6">
-                          <h4 className="text-sm font-medium text-cyan-400 mb-3">SPECIALNOSTI:</h4>
+                          <h4 className="text-sm font-medium text-cyan-400 mb-3">SPECIJALNOSTI:</h4>
                           <div className="flex flex-wrap gap-2 text-xs text-gray-400">—</div>
                         </div>
                         
@@ -571,14 +572,9 @@ export default function ClubsPage() {
                       </div>
                     </motion.div>
                     
-                    <GlitchText
-                      text="ACADEMY MATRIX EMPTY"
-                      className="text-2xl font-bold mb-4"
-                    />
+                    <GlitchText text="NEMA KLUBOVA" className="text-2xl font-bold mb-4" />
                     
-                    <p className="text-gray-400 text-lg mb-8">
-                      Neural scan nije pronašao klubove sa zadatim filterima
-                    </p>
+                    <p className="text-gray-400 text-lg mb-8">Nema klubova za zadate filtere</p>
                     
                     <Button 
                       variant="neon" 
@@ -594,7 +590,7 @@ export default function ClubsPage() {
                         className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-20"
                         whileHover={{ opacity: 0.4 }}
                       />
-                      <span className="relative z-10 font-semibold">Resetuj academy filtere</span>
+                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
                     </Button>
                   </div>
                 </div>

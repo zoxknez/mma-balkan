@@ -29,7 +29,7 @@ export function Countdown({ startAt }: { startAt: string }) {
   return (
     <div className="inline-flex items-center gap-2 text-sm">
       {isPast ? (
-        <span className="text-red-400">LIVE / STARTED</span>
+        <span className="text-red-400">UŽIVO / POČELO</span>
       ) : (
         <>
           <span className="text-gray-400">Počinje za:</span>

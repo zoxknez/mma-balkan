@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { FighterCard } from '@/components/fighters/fighter-card';
 import { Fighter, WeightClass } from '@/lib/types';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
+import { SelectMenu } from '@/components/ui/UIPrimitives';
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { useFighters } from '@/hooks/useFighters';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -137,17 +138,17 @@ export default function FightersPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Kompletna neural baza najelitijijih MMA boraca sa Balkana.
-                Analiza, statistike i real-time praćenje performansi.
+                Kompletna baza najelitnijih MMA boraca sa Balkana.
+                Analiza, statistike i praćenje performansi u realnom vremenu.
               </motion.p>
               
               {/* Stats Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                {[
+                {[ 
                   { icon: <Users className="w-8 h-8" />, value: filteredFighters.length, label: "Aktivnih boraca", color: "#ef4444" },
                   { icon: <Trophy className="w-8 h-8" />, value: 47, label: "Šampiona", color: "#f59e0b" },
-                  { icon: <Target className="w-8 h-8" />, value: 89, label: "Accuracy %", color: "#10b981" },
-                  { icon: <Activity className="w-8 h-8" />, value: 156, label: "Live mečeva", color: "#8b5cf6" }
+                  { icon: <Target className="w-8 h-8" />, value: 89, label: "Tačnost predikcija", color: "#10b981" },
+                  { icon: <Activity className="w-8 h-8" />, value: 156, label: "Mečeva uživo", color: "#8b5cf6" }
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
@@ -185,16 +186,16 @@ export default function FightersPage() {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white flex items-center">
                       <Target className="w-6 h-6 mr-3 text-red-500" />
-                      Neural Combat Analysis
+                      Pregled boraca
                     </h2>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-green-400 text-sm font-medium">LIVE DATABASE</span>
+                      <span className="text-green-400 text-sm font-medium">UŽIVO</span>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Quantum Search */}
+                    {/* Pretraga */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -204,7 +205,7 @@ export default function FightersPage() {
                       <div className="relative glass-card p-4 border border-green-400/30">
                         <label className="flex items-center text-sm font-medium text-green-400 mb-2">
                           <Search className="w-4 h-4 mr-2" />
-                          Quantum Search
+                          Pretraga
                         </label>
                         <div className="relative">
                           <input
@@ -225,7 +226,7 @@ export default function FightersPage() {
                       </div>
                     </motion.div>
 
-                    {/* Weight Class Selector */}
+                    {/* Izbor kategorije */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -235,9 +236,9 @@ export default function FightersPage() {
                       <div className="relative glass-card p-4 border border-blue-400/30">
                         <label className="flex items-center text-sm font-medium text-blue-400 mb-2">
                           <Filter className="w-4 h-4 mr-2" />
-                          Combat Class
+                          Kategorija
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={selectedWeightClass}
                           onChange={(value) => setSelectedWeightClass(value as WeightClass | 'all')}
                           options={[
@@ -249,7 +250,7 @@ export default function FightersPage() {
                       </div>
                     </motion.div>
 
-                    {/* Sort Algorithm */}
+                    {/* Sortiranje */}
                     <motion.div 
                       className="relative group"
                       whileHover={{ scale: 1.02 }}
@@ -259,15 +260,15 @@ export default function FightersPage() {
                       <div className="relative glass-card p-4 border border-purple-400/30">
                         <label className="flex items-center text-sm font-medium text-purple-400 mb-2">
                           <SortAsc className="w-4 h-4 mr-2" />
-                          Sort Algorithm
+                          Sortiranje
                         </label>
-                        <NeuralSelect
+                        <SelectMenu
                           value={sortBy}
                           onChange={(value) => setSortBy(value as 'name' | 'wins' | 'ranking')}
                           options={[
-                            { value: 'name', label: 'Alpha Protocol' },
-                            { value: 'wins', label: 'Victory Matrix' },
-                            { value: 'ranking', label: 'Neural Ranking' }
+                            { value: 'name', label: 'Po imenu' },
+                            { value: 'wins', label: 'Po broju pobeda' },
+                            { value: 'ranking', label: 'Po rangu' }
                           ]}
                           className="w-full"
                         />
@@ -329,7 +330,7 @@ export default function FightersPage() {
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 <Zap className="w-8 h-8 mr-3 text-red-500" />
-                ACTIVE WARRIORS
+                AKTIVNI BORCI
                 <Zap className="w-8 h-8 ml-3 text-red-500" />
               </motion.h3>
               <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-blue-500 mx-auto rounded-full" />
@@ -419,7 +420,7 @@ export default function FightersPage() {
                     {index + 1}
                   </motion.div>
                   
-                  {/* Neural Scan Lines */}
+                  {/* Efekat skeniranja */}
                   <motion.div
                     className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100"
                     animate={{
@@ -464,7 +465,7 @@ export default function FightersPage() {
                 <div className="relative z-10">
                   <h4 className="text-xl font-bold text-white mb-4 flex items-center justify-center">
                     <Activity className="w-6 h-6 mr-2 text-green-400" />
-                    Neural Expansion
+                    Proširenje
                   </h4>
                   <Button 
                     variant="neon" 
@@ -489,7 +490,7 @@ export default function FightersPage() {
             </motion.div>
           )}
 
-          {/* Neural No Results */}
+          {/* Nema rezultata */}
           {filteredFighters.length === 0 && (
             <motion.div 
               className="text-center py-20"
@@ -512,12 +513,12 @@ export default function FightersPage() {
                   </motion.div>
                   
                   <GlitchText
-                    text="NEURAL SCAN COMPLETE"
+                    text="SKENIRANJE ZAVRŠENO"
                     className="text-2xl font-bold mb-4"
                   />
                   
                   <p className="text-gray-400 text-lg mb-8">
-                    Quantum search nije pronašao borce sa zadatim parametrima
+                    Pretraga nije pronašla borce sa zadatim parametrima
                   </p>
                   
                   <div className="space-y-4">
@@ -534,7 +535,7 @@ export default function FightersPage() {
                         className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 opacity-20"
                         whileHover={{ opacity: 0.4 }}
                       />
-                      <span className="relative z-10 font-semibold">Resetuj neural filtere</span>
+                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
                     </Button>
                     
                     <div className="grid grid-cols-3 gap-2">

@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Fighter } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { formatRecord, getCountryFlag } from '@/lib/utils';
+import { formatRecord, getCountryFlag, prettyWeightClass, prettyStance } from '@/lib/utils';
 
 interface FighterCardProps {
   fighter: Partial<Fighter>;
@@ -95,11 +95,11 @@ export function FighterCard({
         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
           <div>
             <span className="text-gray-400">Kategorija:</span>
-            <p className="text-white font-medium">{fighter.weightClass ?? '—'}</p>
+            <p className="text-white font-medium">{prettyWeightClass(String(fighter.weightClass))}</p>
           </div>
           <div>
             <span className="text-gray-400">Stil:</span>
-            <p className="text-white font-medium">{fighter.stance ?? '—'}</p>
+            <p className="text-white font-medium">{prettyStance(String(fighter.stance))}</p>
           </div>
           {fighter.club && (
             <div className="col-span-2">

@@ -37,7 +37,7 @@ export default function Home() {
       <JsonLd data={{
         '@context': 'https://schema.org',
         '@type': 'SportsEvent',
-        name: 'SBC 45: Rakić vs. Błachowicz II',
+  name: 'SBC 45: Rakić vs. Błachowicz II',
         sport: 'Mixed Martial Arts',
         startDate: eventStartISO,
         eventStatus: 'https://schema.org/EventScheduled',
