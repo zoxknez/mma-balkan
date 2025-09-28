@@ -80,10 +80,10 @@ export default function Home() {
 
           {/* CTA */}
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="neon" className="text-base md:text-lg px-8">
+            <Button size="lg" variant="neon" className="text-lg md:text-xl px-10 py-3.5">
               Kreiraj nalog
             </Button>
-            <Button size="lg" variant="outline" className="text-base md:text-lg px-8">
+            <Button size="lg" variant="outline" className="text-lg md:text-xl px-10 py-3.5">
               Saznaj više
             </Button>
           </div>
