@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Target, Zap, Shield, Trophy, Users, Sword, Activity } from 'lucide-react';
 import { Layout } from '@/components/layout';
@@ -13,14 +13,12 @@ import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/Neura
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { useFighters } from '@/hooks/useFighters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePrefetch } from '@/lib/prefetch';
 
 export default function FightersPage() {
   const prefetch = usePrefetch();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -50,17 +48,17 @@ export default function FightersPage() {
       return 0;
     });
 
-  // Initialize state from URL
+  // Initialize state from URL (client-only)
   useEffect(() => {
-    const q = searchParams.get('q') || '';
-    const wc = (searchParams.get('wc') as WeightClass | null) || 'all';
-    const sort = (searchParams.get('sort') as 'name' | 'wins' | 'ranking' | null) || 'name';
-    const p = Number(searchParams.get('page') || '1') || 1;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const wc = (params.get('wc') as WeightClass | null) || 'all';
+    const sort = (params.get('sort') as 'name' | 'wins' | 'ranking' | null) || 'name';
+    const p = Number(params.get('page') || '1') || 1;
     setSearchTerm(q);
     setSelectedWeightClass(wc);
     setSortBy(sort);
     setPage(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync state to URL
@@ -389,14 +387,18 @@ export default function FightersPage() {
                       <Link href={`/fighters/${fighter.id}`} className="block" onMouseEnter={() => prefetch(`/fighters/${fighter.id}`)}>
                         <FighterCard
                           fighter={fighter}
-                          onFollow={(id) => console.log('Follow fighter:', id)}
+                          onFollow={(id) => {
+                            import('@/lib/logger').then(({ logger }) => logger.debug('Follow fighter:', id));
+                          }}
                           showStats={true}
                         />
                       </Link>
                     ) : (
                       <FighterCard
                         fighter={fighter}
-                        onFollow={(id) => console.log('Follow fighter:', id)}
+                        onFollow={(id) => {
+                          import('@/lib/logger').then(({ logger }) => logger.debug('Follow fighter:', id));
+                        }}
                         showStats={true}
                       />
                     )}

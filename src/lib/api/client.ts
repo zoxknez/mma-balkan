@@ -71,6 +71,12 @@ export interface ApiResponse<T> {
 }
 
 // Base API client
+const withTimeout = (ms: number) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(id) };
+};
+
 class ApiClient {
   private baseUrl: string;
 
@@ -84,6 +90,7 @@ class ApiClient {
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const t = withTimeout(15000);
     try {
       const url = `${this.baseUrl}${endpoint}`;
       const config: RequestInit = {
@@ -92,6 +99,8 @@ class ApiClient {
           'Content-Type': 'application/json',
           ...headers,
         },
+        signal: t.signal,
+        cache: method === 'GET' ? 'no-store' : undefined,
       };
 
       if (data !== undefined && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -99,7 +108,7 @@ class ApiClient {
       }
 
       const response = await fetch(url, config);
-      const result = await response.json();
+  const result = await response.json();
 
       if (!response.ok) {
         throw new Error(result.message || `HTTP Error: ${response.status}`);
@@ -107,8 +116,11 @@ class ApiClient {
 
       return result;
     } catch (error) {
-      console.error(`API Error [${method} ${endpoint}]:`, error);
+      const { logger } = await import('../logger');
+      logger.error(`API Error [${method} ${endpoint}]`, error);
       throw error;
+    } finally {
+      t.clear();
     }
   }
 

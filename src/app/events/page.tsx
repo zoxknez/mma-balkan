@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Users, Trophy, Zap, Target, Activity, Filter } from 'lucide-react';
 import { Layout } from '@/components/layout';
@@ -10,8 +10,7 @@ import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/Neura
 import { useEvents } from '@/hooks/useEvents';
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePrefetch } from '@/lib/prefetch';
 
@@ -29,7 +28,6 @@ type UiEvent = {
 
 export default function EventsPage() {
   const prefetch = usePrefetch();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'live' | 'completed'>('all');
@@ -92,15 +90,15 @@ export default function EventsPage() {
       }
     });
 
-  // Initialize state from URL
+  // Initialize state from URL (client-only)
   useEffect(() => {
-    const status = (searchParams.get('status') as 'all' | 'upcoming' | 'live' | 'completed' | null) || 'all';
-    const sort = (searchParams.get('sort') as 'date' | 'name' | 'venue' | null) || 'date';
-    const p = Number(searchParams.get('page') || '1') || 1;
+    const params = new URLSearchParams(window.location.search);
+    const status = (params.get('status') as 'all' | 'upcoming' | 'live' | 'completed' | null) || 'all';
+    const sort = (params.get('sort') as 'date' | 'name' | 'venue' | null) || 'date';
+    const p = Number(params.get('page') || '1') || 1;
     setFilterStatus(status);
     setSortBy(sort);
     setPage(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync state to URL

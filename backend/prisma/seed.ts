@@ -75,9 +75,13 @@ async function main() {
 main()
   .then(async () => {
     await prisma.$disconnect();
-    console.log("Seed completed");
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log("Seed completed");
+    }
   })
   .catch(async (e) => {
+    // eslint-disable-next-line no-console
     console.error(e);
     await prisma.$disconnect();
     process.exit(1);

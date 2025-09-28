@@ -3,6 +3,12 @@ import type { MetadataRoute } from 'next';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
   const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
+  if (process.env.NODE_ENV === 'production') {
+    const allowLocalBase = /localhost|127\.0\.0\.1/.test(base);
+    const allowLocalApi = /localhost|127\.0\.0\.1/.test(api);
+    if (!allowLocalBase && !base.startsWith('https://')) throw new Error('NEXT_PUBLIC_SITE_URL mora biti https u produkciji');
+    if (!allowLocalApi && !api.startsWith('https://')) throw new Error('NEXT_PUBLIC_API_URL mora biti https u produkciji');
+  }
   const now = new Date().toISOString();
 
   const staticRoutes: MetadataRoute.Sitemap = ['', '/fighters', '/events', '/news', '/clubs', '/community'].map((p) => ({

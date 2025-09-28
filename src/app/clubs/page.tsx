@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Users, Trophy, Star, Phone, Mail, Globe, Shield, Zap, Target, Activity, Filter, Search } from 'lucide-react';
 import { Layout } from '@/components/layout';
@@ -10,9 +10,8 @@ import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/Neura
 import { useClubs } from '@/hooks/useClubs';
 // import { QuantumStatBar } from '@/components/ui/QuantumStats';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { usePrefetch } from '@/lib/prefetch';
 
 type UiClub = { id: string; name: string; city: string; country: string; members?: number | null };
@@ -22,7 +21,6 @@ const specialties = ['Sve', 'MMA', 'Boxing', 'Muay Thai', 'Brazilian Jiu Jitsu',
 
 export default function ClubsPage() {
   const prefetch = usePrefetch();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [selectedCountry, setSelectedCountry] = useState('Sve');
@@ -58,17 +56,17 @@ export default function ClubsPage() {
       }
     });
 
-  // Initialize state from URL
+  // Initialize state from URL (client-only)
   useEffect(() => {
-    const q = searchParams.get('q') || '';
-    const country = searchParams.get('country') || 'Sve';
-    const sort = (searchParams.get('sort') as 'name' | 'members' | 'rating' | 'founded' | null) || 'rating';
-    const p = Number(searchParams.get('page') || '1') || 1;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const country = params.get('country') || 'Sve';
+    const sort = (params.get('sort') as 'name' | 'members' | 'rating' | 'founded' | null) || 'rating';
+    const p = Number(params.get('page') || '1') || 1;
     setSearchTerm(q);
     setSelectedCountry(country);
     setSortBy(sort);
     setPage(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync state to URL

@@ -12,13 +12,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
+const allowLocal = /localhost|127\.0\.0\.1/.test(siteUrl);
+if (process.env.NODE_ENV === 'production' && !allowLocal && !siteUrl.startsWith('https://')) {
+  throw new Error('NEXT_PUBLIC_SITE_URL mora biti https u produkciji');
+}
+
 export const metadata: Metadata = {
   title: {
     default: 'MMA Balkan — Futuristička MMA platforma',
     template: '%s · MMA Balkan',
   },
   description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima — neuralni UI, live statistika i futuristički vizuali.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl),
   openGraph: {
     title: 'MMA Balkan',
     description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima.',

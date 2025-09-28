@@ -14,8 +14,8 @@ const BASE_PORT = Number(process.env.PORT || 3003);
 async function bootstrap() {
   const app = Fastify({ logger: true });
 
-  // In dev, allow any origin to simplify FE<->BE on different ports
-  await app.register(cors, { origin: true });
+  // CORS: allow all in dev; restrict in production
+  await app.register(cors, { origin: process.env.NODE_ENV === 'production' ? process.env.ORIGIN : true });
   await app.register(swagger, {
     openapi: { info: { title: "MMA Serbia API", version: "0.1.0" } },
   });
@@ -50,6 +50,11 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error(err);
-  process.exit(1);
+  // Use Fastify logger if available
+  try {
+    // eslint-disable-next-line no-console
+    console.error(err);
+  } finally {
+    process.exit(1);
+  }
 });

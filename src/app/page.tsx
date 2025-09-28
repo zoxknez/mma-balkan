@@ -1,12 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Trophy, TrendingUp, MapPin, Zap, Target, Shield } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ParticleSystem, CyberGrid, FloatingElements } from '@/components/effects/ParticleSystem';
-// import { Avatar3D, HolographicDisplay } from '@/components/effects/Avatar3D';
+import { CyberGrid } from '@/components/effects/ParticleSystem';
+import Skeleton from '@/components/ui/skeleton';
+import { useUpcomingEvents } from '@/hooks/useEvents';
+import { useTrendingFighters } from '@/hooks/useFighters';
 import { AnimatedCounter, GlitchText } from '@/components/ui/NeuralComponents';
 import { /* NeuralStats, */ QuantumStatBar, MomentumGraph } from '@/components/ui/QuantumStats';
 
@@ -48,74 +51,219 @@ export default function Home() {
     defense: 75,
     aggression: 80
   };
-
-  // Reserved for future dynamic data
-
+  
   return (
     <Layout>
-      {/* Background Effects */}
-      <ParticleSystem particleCount={30} color="#00ff88" />
-      <CyberGrid />
-      <FloatingElements />
-      
-      {/* Hero Section */}
-      <section className="pt-16 pb-20 px-6 relative z-10">
+      {/* Hero */}
+      <section className="relative px-6 pt-24 pb-12">
         <div className="max-w-7xl mx-auto">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
+          <motion.div
+            className="mb-10"
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
-            <motion.h1 
-              className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent"
-              animate={{ 
-                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
-              }}
-              transition={{ 
-                duration: 5, 
-                repeat: Infinity, 
-                ease: "linear" 
-              }}
-            >
-              <GlitchText text="SVE BORBE" trigger={true} />
-            </motion.h1>
-            
-            <motion.h2 
-              className="text-4xl md:text-6xl font-bold mb-8 text-white"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-            >
-              SVI BORCI SA <span className="text-green-400">BALKANA</span>
-            </motion.h2>
-            
-            <motion.p 
-              className="text-xl text-gray-300 max-w-4xl mx-auto mb-12 leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.8 }}
-            >
-              Prva i jedina platforma koja spaja sve MMA organizacije, borce i klubove 
-              sa Balkana na jednom mestu. <strong className="text-green-400">Lokalni borci, globalne borbe.</strong>
-            </motion.p>
-            
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1, duration: 0.8 }}
-            >
-              <Button variant="neon" size="lg" className="text-xl px-12 py-6">
-                <Zap className="w-6 h-6 mr-2" />
-                Istraži borce
-              </Button>
-              <Button variant="outline" size="lg" className="text-xl px-12 py-6">
-                <Target className="w-6 h-6 mr-2" />
-                Pogledaj događaje
-              </Button>
-            </motion.div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3">
+              MMA Balkan — Futuristički portal borilačkih sportova
+            </h1>
+            <p className="text-gray-300 max-w-3xl mb-8">
+              Prati borce, događaje i klubove širom regiona. Live ticker, napredne analitike i besprekorno brz UI.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/events">
+                <Button variant="outline">Naredni događaji</Button>
+              </Link>
+              <Link href="/fighters">
+                <Button variant="neon" className="gap-2">
+                  <Zap className="w-5 h-5" /> Istraži borce
+                </Button>
+              </Link>
+            </div>
           </motion.div>
+
+          <HomepageSections />
+        </div>
+      </section>
+
+      {/* Featured Fight Card - Ultra Enhanced */}
+      <motion.div 
+        className="glass-card p-8 mb-16 holographic relative overflow-hidden max-w-7xl mx-auto"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        {/* Background Glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-400/5 via-transparent to-blue-600/5" />
+        
+        <div className="text-center mb-8 relative z-10">
+          <motion.span 
+            className="text-green-400 font-semibold text-sm uppercase tracking-wider animate-pulse"
+            animate={{ opacity: [1, 0.5, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            ⚡ FEATURED MEČ NEDELJE ⚡
+          </motion.span>
+          <h3 className="text-4xl font-bold text-white mt-2 mb-2">
+            SBC 45: Rakić vs. Blachowicz II
+          </h3>
+          <p className="text-gray-300 mt-2 text-lg">15. Decembar 2025 • Stark Arena, Beograd</p>
+          
+          {/* Live countdown timer */}
+          <motion.div 
+            className="mt-4 flex justify-center space-x-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+          >
+            {['15', '12', '45', '30'].map((time, index) => (
+              <div key={index} className="glass-card px-3 py-2 text-center">
+                <div className="text-2xl font-bold text-green-400">
+                  <AnimatedCounter value={parseInt(time)} />
+                </div>
+                <div className="text-xs text-gray-400">
+                  {['DANA', 'SATI', 'MIN', 'SEK'][index]}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8 items-center relative z-10">
+          {/* Fighter 1 - 3D Avatar */}
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+          >
+            <HolographicDisplayLocal 
+              name="Aleksandar Rakić" 
+              wins={14} 
+              losses={3}
+              className="mb-4" 
+            />
+            <h4 className="text-2xl font-bold text-white mb-2">Aleksandar Rakić</h4>
+            <p className="text-green-400 text-xl font-bold mb-2">14-3-0</p>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-8 h-6 bg-gradient-to-r from-blue-600 to-red-600 mr-2 rounded-sm shadow-lg"></div>
+              <span className="text-gray-300 font-medium">Srbija</span>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="space-y-2">
+              <QuantumStatBar 
+                label="Striking" 
+                value={mockFighterStats.striking} 
+                maxValue={100} 
+                color="#00ff88"
+                icon={<Target className="w-4 h-4" />}
+              />
+              <QuantumStatBar 
+                label="Power" 
+                value={mockFighterStats.power} 
+                maxValue={100} 
+                color="#ff3366"
+                icon={<Zap className="w-4 h-4" />}
+              />
+            </div>
+          </motion.div>
+          
+          {/* VS Section */}
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+          >
+            <motion.div 
+              className="text-8xl font-bold text-green-400 mb-6"
+              animate={{ 
+                textShadow: [
+                  '0 0 20px #00ff88',
+                  '0 0 40px #00ff88, 0 0 60px #00ff88',
+                  '0 0 20px #00ff88'
+                ]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              VS
+            </motion.div>
+            <div className="text-gray-300 text-lg font-semibold mb-4">
+              Light Heavyweight Championship
+            </div>
+            <div className="glass-card p-4">
+              <div className="text-sm text-gray-400 mb-2">Fight Odds</div>
+              <div className="flex justify-center space-x-4">
+                <div className="text-center">
+                  <div className="text-green-400 font-bold">-150</div>
+                  <div className="text-xs text-gray-400">Rakić</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-blue-400 font-bold">+130</div>
+                  <div className="text-xs text-gray-400">Błachowicz</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+          
+          {/* Fighter 2 - 3D Avatar */}
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+          >
+            <HolographicDisplayLocal 
+              name="Jan Błachowicz" 
+              wins={29} 
+              losses={10}
+              className="mb-4" 
+            />
+            <h4 className="text-2xl font-bold text-white mb-2">Jan Błachowicz</h4>
+            <p className="text-blue-400 text-xl font-bold mb-2">29-10-1</p>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-8 h-6 bg-gradient-to-r from-white to-red-600 mr-2 rounded-sm shadow-lg"></div>
+              <span className="text-gray-300 font-medium">Poljska</span>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="space-y-2">
+              <QuantumStatBar 
+                label="Defense" 
+                value={82} 
+                maxValue={100} 
+                color="#00ccff"
+                icon={<Shield className="w-4 h-4" />}
+              />
+              <QuantumStatBar 
+                label="Experience" 
+                value={95} 
+                maxValue={100} 
+                color="#8B5CF6"
+                icon={<Trophy className="w-4 h-4" />}
+              />
+            </div>
+          </motion.div>
+        </div>
+        
+        <motion.div 
+          className="text-center mt-12 relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2 }}
+        >
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button variant="neon" size="lg" className="text-lg px-8">
+              <Target className="w-5 h-5 mr-2" />
+              Predikcije zajednice
+            </Button>
+            <Button variant="outline" size="lg" className="text-lg px-8">
+              <Calendar className="w-5 h-5 mr-2" />
+              Dodaj u kalendar
+            </Button>
+          </div>
+        </motion.div>
+      </motion.div>
 
           {/* Featured Fight Card - Ultra Enhanced */}
           <motion.div 
@@ -297,8 +445,8 @@ export default function Home() {
             </motion.div>
           </motion.div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+      {/* Quick Stats */}
+      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 px-6">
             {[
               { icon: Users, label: 'Aktivnih boraca', value: '1,247', color: 'text-green-400' },
               { icon: Calendar, label: 'Događaja mesečno', value: '47', color: 'text-blue-400' },
@@ -319,56 +467,56 @@ export default function Home() {
                 <div className="text-sm text-gray-300">{stat.label}</div>
               </motion.div>
             ))}
-          </div>
+      </div>
 
-          {/* Trending Fighters */}
-          <motion.section 
-            className="mb-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
-            <h3 className="text-3xl font-bold text-white mb-8 flex items-center">
-              <TrendingUp className="w-8 h-8 text-green-400 mr-3" />
-              Trending borci
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { name: 'Miloš Terzić', record: '12-2-0', org: 'SBC', flag: 'serbia' },
-                { name: 'Ana Bajić', record: '8-1-0', org: 'FNC', flag: 'serbia' },
-                { name: 'Marko Petrović', record: '15-4-1', org: 'Megdan', flag: 'montenegro' }
-              ].map((fighter, index) => (
-                <Card key={index} hover className="fighter-card">
-                  <CardContent className="p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 p-1 mr-4">
-                        <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
-                          <span className="font-bold">{fighter.name.split(' ').map(n => n[0]).join('')}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white">{fighter.name}</h4>
-                        <p className="text-green-400 text-sm">{fighter.record}</p>
-                        <p className="text-gray-300 text-sm">{fighter.org}</p>
-                      </div>
+      {/* Trending Fighters */}
+      <motion.section 
+        className="mb-16 px-6 max-w-7xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+      >
+        <h3 className="text-3xl font-bold text-white mb-8 flex items-center">
+          <TrendingUp className="w-8 h-8 text-green-400 mr-3" />
+          Trending borci
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { name: 'Miloš Terzić', record: '12-2-0', org: 'SBC', flag: 'serbia' },
+            { name: 'Ana Bajić', record: '8-1-0', org: 'FNC', flag: 'serbia' },
+            { name: 'Marko Petrović', record: '15-4-1', org: 'Megdan', flag: 'montenegro' }
+          ].map((fighter, index) => (
+            <Card key={index} hover className="fighter-card">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 p-1 mr-4">
+                    <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
+                      <span className="font-bold">{fighter.name.split(' ').map(n => n[0]).join('')}</span>
                     </div>
-                    <Button variant="outline" className="w-full">
-                      Prati borca
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </motion.section>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white">{fighter.name}</h4>
+                    <p className="text-green-400 text-sm">{fighter.record}</p>
+                    <p className="text-gray-300 text-sm">{fighter.org}</p>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full">
+                  Prati borca
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </motion.section>
 
-          {/* Latest News & Updates - Ultra Enhanced */}
-          <motion.div
-            className="mb-16"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
+      {/* Latest News & Updates - Ultra Enhanced */}
+      <motion.div
+        className="mb-16 px-6 max-w-7xl mx-auto"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+      >
             <div className="text-center mb-12">
               <GlitchText 
                 text="NAJNOVIJE VESTI" 
@@ -376,7 +524,7 @@ export default function Home() {
               />
               <p className="text-gray-300 text-lg">Pratite sve najbitnije iz sveta Balkanske MMA scene</p>
             </div>
-
+            
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
                 {
@@ -430,16 +578,16 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+      </motion.div>
 
-          {/* Live Activity Feed */}
-          <motion.div
-            className="mb-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 1 }}
-          >
-            <div className="glass-card p-8">
+      {/* Live Activity Feed */}
+      <motion.div
+        className="mb-16 px-6 max-w-7xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1 }}
+      >
+        <div className="glass-card p-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-bold text-white">
                   <span className="text-red-500 animate-pulse mr-2">●</span>
@@ -475,16 +623,16 @@ export default function Home() {
                   </motion.div>
                 ))}
               </div>
-            </div>
-          </motion.div>
+        </div>
+      </motion.div>
 
-          {/* Footer CTA - Ultra Enhanced */}
-          <motion.div 
-            className="text-center relative"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
+      {/* Footer CTA - Ultra Enhanced */}
+      <motion.div 
+        className="text-center relative px-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+      >
             {/* Background effects */}
             <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 via-transparent to-blue-600/10 rounded-3xl" />
             <CyberGrid />
@@ -564,9 +712,55 @@ export default function Home() {
                 ))}
               </motion.div>
             </div>
-          </motion.div>
-        </div>
-      </section>
+      </motion.div>
     </Layout>
+  );
+}
+
+type UpcomingEventItem = { id: string; name: string; startAt: string };
+import type { Fighter as FighterType } from '@/lib/types';
+
+function HomepageSections() {
+  const { data: upcoming, isLoading: loadingEvents } = useUpcomingEvents();
+  const { data: trending, isLoading: loadingFighters } = useTrendingFighters(8);
+  return (
+    <section className="pb-16 relative z-10">
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="glass-card p-6">
+          <h2 className="text-white font-semibold mb-4">Uskoro</h2>
+          {loadingEvents ? (
+            <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
+          ) : upcoming.length ? (
+            <ul className="divide-y divide-white/5">
+              {upcoming.map((e: UpcomingEventItem) => (
+                <li key={e.id} className="py-3 flex items-center justify-between text-sm">
+                  <Link href={`/events/${e.id}`} className="text-white hover:text-purple-300">{e.name}</Link>
+                  <span className="text-gray-400">{new Date(e.startAt).toLocaleDateString('sr-RS')}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-400 text-sm">Nema nadolazećih događaja.</div>
+          )}
+        </div>
+        <div className="glass-card p-6">
+          <h2 className="text-white font-semibold mb-4">Trending borci</h2>
+          {loadingFighters ? (
+            <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-8" />)}</div>
+          ) : trending.length ? (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {trending.map((f: FighterType) => (
+                <li key={f.id} className="flex items-center justify-between">
+                  <Link href={`/fighters/${f.id}`} className="text-white hover:text-green-300">{f.name}</Link>
+                  <span className="text-gray-400 text-xs">{f.wins}-{f.losses}-{f.draws}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-gray-400 text-sm">Nema podataka.</div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

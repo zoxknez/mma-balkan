@@ -1,4 +1,5 @@
 import { apiClient, API_CONFIG, buildQueryParams, ApiResponse } from './client';
+import { logger } from '../logger';
 import { Fighter, WeightClass } from '@/lib/types';
 
 // Fighter query parameters
@@ -131,7 +132,7 @@ export class ExternalFighterDataService {
       const bindings = (data as { results?: { bindings?: unknown[] } })?.results?.bindings;
       return bindings ?? [];
     } catch (error) {
-      console.error('Wikidata API error:', error);
+      logger.warn('Wikidata API error:', error);
       return [];
     }
   }
@@ -150,7 +151,7 @@ export class ExternalFighterDataService {
       }
       return null;
     } catch (error) {
-      console.error('Wikipedia API error:', error);
+      logger.warn('Wikipedia API error:', error);
       return null;
     }
   }
@@ -167,7 +168,7 @@ export class ExternalFighterDataService {
       const players = (data as { player?: unknown[] })?.player;
       return players ?? [];
     } catch (error) {
-      console.error('TheSportsDB API error:', error);
+      logger.warn('TheSportsDB API error:', error);
       return [];
     }
   }

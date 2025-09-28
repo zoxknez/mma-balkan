@@ -16,6 +16,7 @@ import { usePrefetch } from '@/lib/prefetch';
 import { Countdown } from '@/components/ui/countdown';
 import { WatchlistButton } from '../../../components/ui/watchlist-button';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { buildICS, downloadICS } from '@/lib/ics';
 
 export default function EventDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -109,6 +110,23 @@ export default function EventDetailsPage() {
                   <Zap className="w-4 h-4 mr-2" /> Gledaj LIVE
                 </Button>
               )}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const start = new Date(e.startAt);
+                  const ics = buildICS({
+                    uid: `event-${e.id}@mmabalkan`,
+                    title: e.name,
+                    description: `MMA događaj — ${e.name}`,
+                    location: `${e.city}, ${e.country}`,
+                    start,
+                    url: typeof window !== 'undefined' ? window.location.href : undefined,
+                  });
+                  downloadICS(`${e.name.replace(/\s+/g, '_')}.ics`, ics);
+                }}
+              >
+                Dodaj u kalendar
+              </Button>
               <Link href="/events" className="inline-flex">
                 <Button variant="outline">Nazad na događaje</Button>
               </Link>

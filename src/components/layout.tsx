@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { LiveTicker } from '@/components/ui/live-ticker';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -40,6 +41,8 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-850 to-gray-900">
+      {/* Live ticker for ongoing events */}
+      <LiveTicker />
       {/* Ultra-Futuristic Navigation */}
       <nav className="fixed top-0 w-full z-50 glass-card border-0 border-b border-green-400/20 backdrop-blur-xl overflow-hidden">
         {/* Cyber Grid Background */}

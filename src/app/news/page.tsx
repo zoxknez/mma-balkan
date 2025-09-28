@@ -10,7 +10,7 @@ import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/Neura
 import { useNews } from '@/hooks/useNews';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { usePrefetch } from '@/lib/prefetch';
 
 // Mock data za vesti
@@ -91,7 +91,6 @@ const categories = ['Sve', 'Intervjui', 'Organizacije', 'Analize', 'Transfer', '
 
 export default function NewsPage() {
   const prefetch = usePrefetch();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -143,17 +142,18 @@ export default function NewsPage() {
       }
     });
 
-  // Initialize state from URL
+  // Initialize state from URL (client-only)
   useEffect(() => {
-    const q = searchParams.get('q') || '';
-    const cat = searchParams.get('category') || 'Sve';
-    const sort = (searchParams.get('sort') as 'date' | 'views' | 'likes' | null) || 'date';
-    const p = Number(searchParams.get('page') || '1') || 1;
+    // Use window.location to avoid using useSearchParams during prerender
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const cat = params.get('category') || 'Sve';
+    const sort = (params.get('sort') as 'date' | 'views' | 'likes' | null) || 'date';
+    const p = Number(params.get('page') || '1') || 1;
     setSearchTerm(q);
     setSelectedCategory(cat);
     setSortBy(sort);
     setPage(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync state to URL
