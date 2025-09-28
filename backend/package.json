@@ -16,7 +16,6 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@prisma/client": "^5.19.1",
     "fastify": "^5.0.0",
-    "mma": "file:..",
     "zod": "^3.23.8"
   },
   "devDependencies": {
