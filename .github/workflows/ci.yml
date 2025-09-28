@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root deps
+        run: npm ci
+
+      - name: Install backend deps
+        run: npm --prefix backend ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build backend (typecheck)
+        run: |
+          npm --prefix backend run prisma:generate
+          npm --prefix backend run build
+
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:3003
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Upload Next.js build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next
