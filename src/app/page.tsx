@@ -1,5 +1,5 @@
 'use client';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Calendar, Users, Trophy, TrendingUp, MapPin, Zap, Target, Shield } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -8,19 +8,10 @@ import { CyberGrid } from '@/components/effects/ParticleSystem';
 import { AnimatedCounter, GlitchText } from '@/components/ui/NeuralComponents';
 import { /* NeuralStats, */ QuantumStatBar } from '@/components/ui/QuantumStats';
 import HolographicDisplayLocal from '@/components/effects/HolographicDisplayLocal';
-import { LiveActivity, type Activity } from '@/components/ui/LiveActivity';
 import { LiveActivityTight } from '@/components/ui/LiveActivityTight';
 import { useCountdown } from '@/hooks/useCountdown';
 import { JsonLd } from '@/components/seo/JsonLd';
-
-function initials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(n => n[0]?.toUpperCase())
-    .join('')
-    .slice(0, 3) || 'MM';
-}
+import { useActivity } from '@/hooks/useActivity';
 
 // stari rotirajući avatar uklonjen — koristimo statičan HolographicDisplayLocal sa blagim “breathing” efektom
 
@@ -36,6 +27,7 @@ export default function Home() {
   };
   const eventStartISO = '2025-12-15T19:00:00+01:00';
   const { d, h, m, s } = useCountdown(eventStartISO);
+  const activity = useActivity();
   
   return (
     <Layout>
@@ -438,14 +430,7 @@ export default function Home() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
-        <LiveActivityTight
-          items={[
-            { id: '1', user: 'Stefan M.', action: 'postavio predikciju za Rakić vs Błachowicz', timeAgo: 'upravo sada' },
-            { id: '2', user: 'Marko P.',  action: 'komentarisao na SBC 45 diskusiju', timeAgo: 'pre 1 min' },
-            { id: '3', user: 'Ana K.',    action: 'podelila analizu borbe', timeAgo: 'pre 3 min' },
-            { id: '4', user: 'Nikola T.', action: 'lajkovao fighters profil', timeAgo: 'pre 5 min' },
-          ]}
-        />
+        <LiveActivityTight items={activity} />
       </motion.div>
 
     </Layout>

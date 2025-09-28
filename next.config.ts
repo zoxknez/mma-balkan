@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       return [
         // Ako backend koristi drugi port (automatski bump), pokušaj redirekciju na 3003; ako nije dostupan, klijent će fallback na polling
         { source: '/api/:path*', destination: 'http://127.0.0.1:3003/api/:path*' },
+        { source: '/api/activity/:path*', destination: 'http://127.0.0.1:3003/api/activity/:path*' },
       ];
     }
     return [];

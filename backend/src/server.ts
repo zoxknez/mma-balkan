@@ -7,6 +7,7 @@ import { registerClubRoutes } from "./routes/clubs";
 import { registerFighterRoutes } from "./routes/fighters";
 import { registerEventRoutes } from "./routes/events";
 import { registerNewsRoutes } from "./routes/news";
+import { registerActivityRoutes } from "./routes/activity";
 
 const BASE_PORT = Number(process.env.PORT || 3003);
 // ORIGIN kept configurable via env in case we tighten CORS later
@@ -34,6 +35,7 @@ async function bootstrap() {
   await registerFighterRoutes(app);
   await registerEventRoutes(app);
   await registerNewsRoutes(app);
+  await registerActivityRoutes(app);
   await registerErrorHandler(app);
 
   // Try preferred port and retry on EADDRINUSE by incrementing
