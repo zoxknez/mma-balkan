@@ -11,11 +11,14 @@ import AvatarPrsten from '@/components/effects/AvatarPrsten';
 import { LiveActivityTight } from '@/components/ui/LiveActivityTight';
 import { useCountdown } from '@/hooks/useCountdown';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { buildICS, downloadICS } from '@/lib/ics';
+import { useRouter } from 'next/navigation';
 import { useActivity } from '@/hooks/useActivity';
 
 // Uklonjen stari rotirajući avatar — zadržan miran avatar sa blagom animacijom
 
 export default function Home() {
+  const router = useRouter();
   // Mock data za demonstraciju
   const mockFighterStats = {
   striking: 85,
@@ -80,10 +83,30 @@ export default function Home() {
 
           {/* CTA */}
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="neon" className="text-lg md:text-xl px-10 py-3.5">
+            <Button
+              size="lg"
+              variant="neon"
+              className="text-lg md:text-xl px-10 py-3.5"
+              onClick={() => router.push('/community')}
+            >
               Kreiraj nalog
             </Button>
-            <Button size="lg" variant="outline" className="text-lg md:text-xl px-10 py-3.5">
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg md:text-xl px-10 py-3.5"
+              onClick={() => {
+                const ics = buildICS({
+                  uid: 'sbc-45',
+                  title: 'SBC 45: Rakić vs. Błachowicz II',
+                  description: 'Meč u Stark Areni, Beograd',
+                  location: 'Stark Arena, Beograd',
+                  start: new Date('2025-12-15T19:00:00+01:00'),
+                  url: (typeof window !== 'undefined' ? window.location.origin : '') + '/events/sbc-45',
+                });
+                downloadICS('sbc-45.ics', ics);
+              }}
+            >
               Saznaj više
             </Button>
           </div>
@@ -428,7 +451,15 @@ export default function Home() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
-        <LiveActivityTight items={activity} />
+        <div className="max-w-7xl mx-auto px-4">
+          {activity.length ? (
+            <LiveActivityTight items={activity} />
+          ) : (
+            <div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center text-gray-400">
+              Trenutno nema novih aktivnosti.
+            </div>
+          )}
+        </div>
       </motion.div>
 
     </Layout>

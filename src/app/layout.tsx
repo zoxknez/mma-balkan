@@ -21,15 +21,16 @@ if (process.env.NODE_ENV === 'production' && !allowLocal && !siteUrl.startsWith(
 
 export const metadata: Metadata = {
   title: {
-    default: 'MMA Balkan — Futuristička MMA platforma',
+    default: 'MMA Balkan — MMA portal za region',
     template: '%s · MMA Balkan',
   },
-  description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima — neuralni UI, live statistika i futuristički vizuali.',
+  description: 'MMA portal sa borcima, događajima, vestima i klubovima sa Balkana — sve na jednom mestu.',
   metadataBase: new URL(siteUrl),
   icons: { icon: '/favicon.ico' },
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'MMA Balkan',
-    description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima.',
+    description: 'MMA portal sa borcima, događajima, vestima i klubovima sa Balkana — sve na jednom mestu.',
     type: 'website',
     url: '/',
     siteName: 'MMA Balkan',
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'MMA Balkan',
-    description: 'Premium MMA portal sa borcima, događajima, vestima i klubovima.',
+    description: 'MMA portal sa borcima, događajima, vestima i klubovima sa Balkana — sve na jednom mestu.',
   },
 };
 
