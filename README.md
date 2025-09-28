@@ -60,8 +60,30 @@ npm --prefix backend run prisma:generate; npm --prefix backend run prisma:migrat
 # 4) Start dev (frontend + backend concurrently)
 npm run dev
 
-# Frontend: http://localhost:3000
-# Backend:  http://localhost:3001 (Swagger: /docs)
+# Frontend: http://localhost:3002
+# Backend:  http://localhost:3003 (Swagger: /docs)
+
+```
+
+## 🛠️ Deploy with Approvals (GitHub Actions)
+
+1) Frontend (Vercel)
+- Go to GitHub → Actions → "Deploy to Vercel (Production)" → Run workflow
+- Optionally fill inputs:
+  - environment: prod or preview
+  - site_url: https://mma-balkan.org
+  - backend_url: your backend URL (e.g., from Railway)
+  - domain: mma-balkan.org
+- Required repo secrets (Settings → Secrets → Actions):
+  - VERCEL_TOKEN
+  - VERCEL_ORG_ID
+  - VERCEL_PROJECT_ID
+
+2) Backend (Railway)
+- Go to GitHub → Actions → "Backend Deploy (Railway)" → Run workflow
+- Optional input: service (if multiple services in one project)
+- Required repo secret:
+  - RAILWAY_TOKEN
 ```
 
 ## 📁 Struktura Projekta
