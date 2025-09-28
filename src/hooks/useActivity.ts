@@ -18,6 +18,22 @@ export function useActivity() {
     let es: EventSource | null = null;
     let pollId: ReturnType<typeof setInterval> | null = null;
 
+    const withTimeout = async <T,>(p: Promise<T>, ms = 3000): Promise<T> => {
+      return await Promise.race([
+        p,
+        new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)) as Promise<T>,
+      ]);
+    };
+
+    const healthCheck = async () => {
+      try {
+        const res = await withTimeout(fetch(`${base}/healthz`, { cache: 'no-store' }), 2000);
+        return res.ok;
+      } catch {
+        return false;
+      }
+    };
+
     const startPolling = () => {
       const load = async () => {
         try {
@@ -31,8 +47,9 @@ export function useActivity() {
       pollId = setInterval(load, 30000);
     };
 
-    try {
-      es = new EventSource(`${base}/api/activity/stream`);
+    const startSSE = () => {
+      try {
+        es = new EventSource(`${base}/api/activity/stream`);
       es.addEventListener('hello', (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data) as { data?: ActivityItem[] };
@@ -69,9 +86,15 @@ export function useActivity() {
         }
         startPolling();
       };
-    } catch {
-      startPolling();
-    }
+      } catch {
+        startPolling();
+      }
+    };
+
+    healthCheck().then((ok) => {
+      if (!mounted) return;
+      if (ok) startSSE(); else startPolling();
+    });
 
     return () => {
       mounted = false;

@@ -22,6 +22,22 @@ export function LiveTicker() {
     let es: EventSource | null = null;
     let pollId: ReturnType<typeof setInterval> | null = null;
 
+    const withTimeout = async <T,>(p: Promise<T>, ms = 3000): Promise<T> => {
+      return await Promise.race([
+        p,
+        new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)) as Promise<T>,
+      ]);
+    };
+
+    const healthCheck = async () => {
+      try {
+        const res = await withTimeout(fetch(`${base}/healthz`, { cache: 'no-store' }), 2000);
+        return res.ok;
+      } catch {
+        return false;
+      }
+    };
+
     const startPolling = () => {
       const load = async () => {
         try {
@@ -40,9 +56,10 @@ export function LiveTicker() {
       pollId = setInterval(load, 30000);
     };
 
-    try {
-      // Preferiraj dedicated SSE endpoint
-      es = new EventSource(`${base}/api/events/live/stream`);
+    const startSSE = () => {
+      try {
+        // Preferiraj dedicated SSE endpoint
+        es = new EventSource(`${base}/api/events/live/stream`);
       es.addEventListener('hello', (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data) as { data?: LiveEvent[] };
@@ -51,7 +68,7 @@ export function LiveTicker() {
       });
       es.addEventListener('tick', () => { /* heartbeat */ });
       es.onerror = (err) => {
-        console.warn('SSE error in LiveTicker', err);
+        // Tihi fallback bez spamovanja konzole
         setError('SSE error');
         es?.close();
         // U dev okruženju pokušaj direktnu konekciju na backend ako proxy padne
@@ -75,9 +92,16 @@ export function LiveTicker() {
         }
         startPolling();
       };
-    } catch {
-      startPolling();
-    }
+      } catch {
+        startPolling();
+      }
+    };
+
+    // prvo health check, pa SSE ili odmah polling
+    healthCheck().then((ok) => {
+      if (!mounted) return;
+      if (ok) startSSE(); else startPolling();
+    });
 
     return () => {
       mounted = false;
