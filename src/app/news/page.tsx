@@ -1,12 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Newspaper, Clock, User, Eye, Share2, Bookmark, TrendingUp, Zap, Target, Activity, Filter, Search } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
 import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
+import { useNews } from '@/hooks/useNews';
+import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePrefetch } from '@/lib/prefetch';
 
 // Mock data za vesti
 const mockNews = [
@@ -85,11 +90,41 @@ const mockNews = [
 const categories = ['Sve', 'Intervjui', 'Organizacije', 'Analize', 'Transfer', 'Women MMA', 'Training', 'Events'];
 
 export default function NewsPage() {
+  const prefetch = usePrefetch();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [selectedCategory, setSelectedCategory] = useState('Sve');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'views' | 'likes'>('date');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(9);
 
-  const filteredNews = mockNews
+  const { data: apiNews, isLoading, pagination } = useNews({
+    page,
+    limit,
+    search: searchTerm || undefined,
+    category: selectedCategory === 'Sve' ? undefined : selectedCategory,
+  });
+
+  const news = (apiNews || []).map(n => ({
+    id: n.id,
+    title: n.title,
+    excerpt: n.excerpt ?? '',
+    category: n.category,
+    author: n.authorName,
+    publishDate: n.publishAt,
+    views: n.views,
+    likes: n.likes,
+    image: n.imageUrl ?? undefined,
+    featured: n.featured,
+    trending: n.trending,
+  }));
+
+  const baseNews = news.length ? news : mockNews;
+
+  const filteredNews = baseNews
     .filter(article => 
       (selectedCategory === 'Sve' || article.category === selectedCategory) &&
       (article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,6 +142,29 @@ export default function NewsPage() {
           return 0;
       }
     });
+
+  // Initialize state from URL
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    const cat = searchParams.get('category') || 'Sve';
+    const sort = (searchParams.get('sort') as 'date' | 'views' | 'likes' | null) || 'date';
+    const p = Number(searchParams.get('page') || '1') || 1;
+    setSearchTerm(q);
+    setSelectedCategory(cat);
+    setSortBy(sort);
+    setPage(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync state to URL
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (searchTerm) sp.set('q', searchTerm);
+    if (selectedCategory !== 'Sve') sp.set('category', selectedCategory);
+    if (sortBy !== 'date') sp.set('sort', sortBy);
+    if (page > 1) sp.set('page', String(page));
+    router.replace(`${pathname}?${sp.toString()}`);
+  }, [searchTerm, selectedCategory, sortBy, page, router, pathname]);
 
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
@@ -203,7 +261,7 @@ export default function NewsPage() {
                 {[
                   { icon: <Newspaper className="w-8 h-8" />, value: filteredNews.length, label: "Aktuelnih vesti", color: "#f97316" },
                   { icon: <TrendingUp className="w-8 h-8" />, value: filteredNews.filter(n => n.trending).length, label: "Trending sada", color: "#ef4444" },
-                  { icon: <Eye className="w-8 h-8" />, value: Math.floor(mockNews.reduce((sum, n) => sum + n.views, 0) / 1000), label: "K pregleda", color: "#3b82f6" },
+                  { icon: <Eye className="w-8 h-8" />, value: Math.floor(baseNews.reduce((sum, n) => sum + n.views, 0) / 1000), label: "K pregleda", color: "#3b82f6" },
                   { icon: <User className="w-8 h-8" />, value: 47, label: "Aktivnih autora", color: "#10b981" }
                 ].map((stat, index) => (
                   <motion.div
@@ -317,7 +375,7 @@ export default function NewsPage() {
                         </label>
                         <NeuralSelect
                           value={sortBy}
-                          onChange={(value) => setSortBy(value as any)}
+                          onChange={(value) => setSortBy(value as 'date' | 'views' | 'likes')}
                           options={[
                             { value: 'date', label: 'Chronological' },
                             { value: 'views', label: 'Popularity Index' },
@@ -440,7 +498,8 @@ export default function NewsPage() {
                             
                             {/* Actions */}
                             <div className="flex space-x-3">
-                              <Button variant="neon" className="relative overflow-hidden group">
+                              <Link href={`/news/${featured.id}`} onMouseEnter={() => prefetch(`/news/${featured.id}`)}>
+                                <Button variant="neon" className="relative overflow-hidden group">
                                 <motion.div
                                   className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 opacity-20"
                                   animate={{
@@ -453,7 +512,8 @@ export default function NewsPage() {
                                   }}
                                 />
                                 <span className="relative z-10 font-semibold">Pročitaj ceo članak</span>
-                              </Button>
+                                </Button>
+                              </Link>
                               <Button variant="outline" size="sm">
                                 <Share2 className="w-4 h-4 mr-2" />
                                 Podeli
@@ -507,7 +567,15 @@ export default function NewsPage() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredNews.filter(article => !article.featured).map((article, index) => (
+                {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`sk-${i}`} className="glass-card p-6">
+                    <Skeleton className="h-40 w-full mb-4" />
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-4" />
+                    <Skeleton className="h-10 w-24" />
+                  </div>
+                ))}
+                {!isLoading && filteredNews.filter(article => !article.featured).map((article, index) => (
                   <motion.div
                     key={article.id}
                     initial={{ opacity: 0, y: 30, rotateX: -15 }}
@@ -550,7 +618,12 @@ export default function NewsPage() {
                         {/* Image Placeholder */}
                         <div className="aspect-video bg-gradient-to-br from-orange-500/20 to-red-600/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
                           <CyberGrid />
-                          <div className="relative z-10 text-3xl">📰</div>
+                          {article.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={article.image} alt={article.title} className="absolute inset-0 w-full h-full object-cover rounded-lg" />
+                          ) : (
+                            <div className="relative z-10 text-3xl">📰</div>
+                          )}
                           <div className="absolute inset-0 border border-orange-400/20 rounded-lg" />
                         </div>
                         
@@ -591,9 +664,11 @@ export default function NewsPage() {
                         
                         {/* Actions */}
                         <div className="flex space-x-2">
-                          <Button variant="neon" size="sm" className="flex-1 text-xs">
-                            Pročitaj
-                          </Button>
+                          <Link href={`/news/${article.id}`} className="flex-1" onMouseEnter={() => prefetch(`/news/${article.id}`)}>
+                            <Button variant="neon" size="sm" className="w-full text-xs">
+                              Pročitaj
+                            </Button>
+                          </Link>
                           <Button variant="outline" size="sm">
                             <Share2 className="w-3 h-3" />
                           </Button>
@@ -622,10 +697,23 @@ export default function NewsPage() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* Pagination */}
+              <div className="flex justify-center items-center mt-8 gap-4">
+                <Button variant="outline" size="sm" disabled={isLoading || page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  Prethodna
+                </Button>
+                <span className="text-gray-300 text-sm">
+                  Strana {pagination?.page ?? page} / {pagination?.totalPages ?? '—'}
+                </span>
+                <Button variant="outline" size="sm" disabled={isLoading || (pagination ? page >= pagination.totalPages : false)} onClick={() => setPage((p) => p + 1)}>
+                  Sledeća
+                </Button>
+              </div>
             </motion.div>
 
             {/* No Results */}
-            {filteredNews.length === 0 && (
+            {filteredNews.length === 0 && !isLoading && (
               <motion.div 
                 className="text-center py-20"
                 initial={{ opacity: 0, scale: 0.9 }}

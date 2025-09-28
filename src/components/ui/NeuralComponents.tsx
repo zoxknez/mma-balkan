@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Search, X, Filter } from 'lucide-react';
+import { ChevronDown, Search, X } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 
 interface NeuralSelectProps {

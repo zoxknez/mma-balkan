@@ -5,109 +5,78 @@ import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Target, Zap, Shield, Trophy, Users, Sword, Activity } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+// import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { FighterCard } from '@/components/fighters/fighter-card';
-import { Fighter, WeightClass, FightingStance } from '@/lib/types';
+import { Fighter, WeightClass } from '@/lib/types';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
 import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
-import { QuantumStatBar } from '@/components/ui/QuantumStats';
-
-// Mock data - u realnoj aplikaciji bi ovo dolazilo iz API-ja
-const mockFighters: Fighter[] = [
-  {
-    id: '1',
-    name: 'Aleksandar Rakić',
-    nickname: 'Rocket',
-    country: 'Srbija',
-    countryCode: 'RS',
-    birthDate: new Date('1992-02-06'),
-    height: 193,
-    weight: 93,
-    weightClass: WeightClass.LIGHT_HEAVYWEIGHT,
-    reach: 198,
-    stance: FightingStance.ORTHODOX,
-    wins: 14,
-    losses: 3,
-    draws: 0,
-    koTkoWins: 9,
-    submissionWins: 1,
-    decisionWins: 4,
-    isActive: true,
-    lastFight: new Date('2024-03-02'),
-    ranking: {
-      position: 4,
-      organization: 'UFC',
-      weightClass: WeightClass.LIGHT_HEAVYWEIGHT
-    }
-  },
-  {
-    id: '2',
-    name: 'Miloš Terzić',
-    country: 'Srbija',
-    countryCode: 'RS',
-    birthDate: new Date('1995-07-15'),
-    height: 180,
-    weight: 77,
-    weightClass: WeightClass.WELTERWEIGHT,
-    stance: FightingStance.SOUTHPAW,
-    wins: 12,
-    losses: 2,
-    draws: 0,
-    koTkoWins: 7,
-    submissionWins: 3,
-    decisionWins: 2,
-    isActive: true,
-    lastFight: new Date('2024-05-18')
-  },
-  {
-    id: '3',
-    name: 'Ana Bajić',
-    nickname: 'Lightning',
-    country: 'Srbija',
-    countryCode: 'RS',
-    birthDate: new Date('1998-11-22'),
-    height: 165,
-    weight: 57,
-    weightClass: WeightClass.FLYWEIGHT,
-    stance: FightingStance.ORTHODOX,
-    wins: 8,
-    losses: 1,
-    draws: 0,
-    koTkoWins: 3,
-    submissionWins: 2,
-    decisionWins: 3,
-    isActive: true,
-    lastFight: new Date('2024-04-10')
-  }
-];
+// import { QuantumStatBar } from '@/components/ui/QuantumStats';
+import { useFighters } from '@/hooks/useFighters';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { usePrefetch } from '@/lib/prefetch';
 
 export default function FightersPage() {
+  const prefetch = usePrefetch();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWeightClass, setSelectedWeightClass] = useState<WeightClass | 'all'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'wins' | 'ranking'>('name');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
+  const { data: apiFighters, pagination, isLoading } = useFighters({
+    page,
+    limit,
+    search: searchTerm || undefined,
+    weightClass: selectedWeightClass === 'all' ? undefined : selectedWeightClass,
+  } as unknown as Parameters<typeof useFighters>[0]);
 
-  const filteredFighters = mockFighters
-    .filter(fighter => {
-      const matchesSearch = fighter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (fighter.nickname && fighter.nickname.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesWeightClass = selectedWeightClass === 'all' || fighter.weightClass === selectedWeightClass;
-      return matchesSearch && matchesWeightClass;
-    })
+  const fighters = (apiFighters as Partial<Fighter>[] | undefined) ?? [];
+
+  const filteredFighters = fighters
     .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'wins':
-          return b.wins - a.wins;
-        case 'ranking':
-          if (a.ranking && b.ranking) {
-            return a.ranking.position - b.ranking.position;
-          }
-          return a.ranking ? -1 : 1;
-        default:
-          return 0;
+      if (sortBy === 'name') return (a.name ?? '').localeCompare(b.name ?? '');
+      if (sortBy === 'wins') return (b.wins ?? 0) - (a.wins ?? 0);
+      if (sortBy === 'ranking') {
+        const ap = a.ranking?.position ?? Number.MAX_SAFE_INTEGER;
+        const bp = b.ranking?.position ?? Number.MAX_SAFE_INTEGER;
+        return ap - bp;
       }
+      return 0;
     });
+
+  // Initialize state from URL
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    const wc = (searchParams.get('wc') as WeightClass | null) || 'all';
+    const sort = (searchParams.get('sort') as 'name' | 'wins' | 'ranking' | null) || 'name';
+    const p = Number(searchParams.get('page') || '1') || 1;
+    setSearchTerm(q);
+    setSelectedWeightClass(wc);
+    setSortBy(sort);
+    setPage(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync state to URL
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (searchTerm) sp.set('q', searchTerm);
+    if (selectedWeightClass !== 'all') sp.set('wc', String(selectedWeightClass));
+    if (sortBy !== 'name') sp.set('sort', sortBy);
+    if (page > 1) sp.set('page', String(page));
+    router.replace(`${pathname}?${sp.toString()}`);
+  }, [searchTerm, selectedWeightClass, sortBy, page, router, pathname]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   return (
     <Layout>
@@ -369,7 +338,30 @@ export default function FightersPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredFighters.map((fighter, index) => (
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <div key={`sk-${i}`} className="glass-card p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <Skeleton className="w-16 h-16 rounded-full" />
+                      <div>
+                        <Skeleton className="h-5 w-40 mb-2" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-8 w-20 rounded-md" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                    <Skeleton className="h-10" />
+                  </div>
+                </div>
+              ))}
+              {!isLoading && filteredFighters.map((fighter, index) => (
                 <motion.div
                   key={fighter.id}
                   initial={{ opacity: 0, y: 30, rotateX: -15 }}
@@ -393,11 +385,21 @@ export default function FightersPage() {
                   
                   {/* Enhanced Fighter Card */}
                   <div className="relative transform transition-all duration-300 group-hover:scale-105">
-                    <FighterCard
-                      fighter={fighter}
-                      onFollow={(id) => console.log('Follow fighter:', id)}
-                      showStats={true}
-                    />
+                    {fighter.id ? (
+                      <Link href={`/fighters/${fighter.id}`} className="block" onMouseEnter={() => prefetch(`/fighters/${fighter.id}`)}>
+                        <FighterCard
+                          fighter={fighter}
+                          onFollow={(id) => console.log('Follow fighter:', id)}
+                          showStats={true}
+                        />
+                      </Link>
+                    ) : (
+                      <FighterCard
+                        fighter={fighter}
+                        onFollow={(id) => console.log('Follow fighter:', id)}
+                        showStats={true}
+                      />
+                    )}
                   </div>
                   
                   {/* Rank Indicator */}
@@ -432,6 +434,18 @@ export default function FightersPage() {
                   />
                 </motion.div>
               ))}
+            </div>
+            {/* Pagination Controls */}
+            <div className="flex justify-center items-center mt-8 gap-4">
+              <Button variant="outline" size="sm" disabled={isLoading || page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                Prethodna
+              </Button>
+              <span className="text-gray-300 text-sm">
+                Strana {pagination?.page ?? page} / {pagination?.totalPages ?? '—'}
+              </span>
+              <Button variant="outline" size="sm" disabled={isLoading || (pagination ? page >= pagination.totalPages : false)} onClick={() => setPage(p => p + 1)}>
+                Sledeća
+              </Button>
             </div>
           </motion.div>
 

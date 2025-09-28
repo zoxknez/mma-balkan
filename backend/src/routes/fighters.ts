@@ -14,11 +14,11 @@ export async function registerFighterRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/fighters", async (req, reply) => {
-    const parsed = q.safeParse((req as any).query);
+    const parsed = q.safeParse((req as { query: unknown }).query);
     if (!parsed.success) return reply.code(400).send(fail("Invalid query", parsed.error.issues));
     const { page, limit, search, country, weightClass, active } = parsed.data;
 
-    const where: any = {};
+  const where: Record<string, unknown> = {};
     if (search)
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -37,9 +37,47 @@ export async function registerFighterRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/fighters/trending", async (req) => {
-    const limit = Number((req as any).query?.limit ?? 10);
+    const limit = Number((req as { query?: { limit?: number | string } }).query?.limit ?? 10);
     // Simple trending heuristic: most wins and recently updated
     const items = await prisma.fighter.findMany({ orderBy: [{ wins: "desc" }, { updatedAt: "desc" }], take: Math.min(limit, 50) });
     return ok(items);
+  });
+
+  app.get("/api/fighters/:id", async (req, reply) => {
+    const id = (req.params as { id?: string }).id as string;
+    if (!id) return reply.code(400).send(fail("Missing fighter id"));
+    const fighter = await prisma.fighter.findUnique({ where: { id } });
+    if (!fighter) return reply.code(404).send(fail("Fighter not found"));
+    return ok(fighter);
+  });
+
+  // Fighter fight history (completed)
+  app.get("/api/fighters/:id/fights", async (req, reply) => {
+    const id = (req.params as { id?: string }).id as string;
+    if (!id) return reply.code(400).send(fail("Missing fighter id"));
+    const fights = await prisma.fight.findMany({
+      where: {
+        OR: [{ redFighterId: id }, { blueFighterId: id }],
+        status: "COMPLETED",
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      include: { event: true, redFighter: true, blueFighter: true },
+    });
+    return ok(fights);
+  });
+
+  // Fighter upcoming fights
+  app.get("/api/fighters/:id/upcoming", async (req, reply) => {
+    const id = (req.params as { id?: string }).id as string;
+    if (!id) return reply.code(400).send(fail("Missing fighter id"));
+    const fights = await prisma.fight.findMany({
+      where: {
+        OR: [{ redFighterId: id }, { blueFighterId: id }],
+        status: { in: ["SCHEDULED", "UPCOMING"] },
+      },
+      orderBy: [{ orderNo: "asc" }],
+      include: { event: true, redFighter: true, blueFighter: true },
+    });
+    return ok(fights);
   });
 }

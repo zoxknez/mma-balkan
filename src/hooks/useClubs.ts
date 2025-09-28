@@ -1,6 +1,6 @@
 "use client";
 import useSWR from "swr";
-import { getClubs, type ClubQuery, type Club } from "@/lib/api/clubs";
+import { getClubs, type ClubQuery } from "@/lib/api/clubs";
 
 export function useClubs(params: ClubQuery = {}) {
   const { data, error, isLoading, mutate } = useSWR(["clubs", params], () => getClubs(params));
@@ -8,6 +8,6 @@ export function useClubs(params: ClubQuery = {}) {
 }
 
 export function useClub(id: string | undefined) {
-  const { data, error, isLoading, mutate } = useSWR(id ? ["club", id] : null, () => getClubs({ id } as any));
+  const { data, error, isLoading, mutate } = useSWR(id ? ["club", id] : null, () => getClubs({}));
   return { data: data?.data?.[0], error, isLoading, refresh: mutate };
 }

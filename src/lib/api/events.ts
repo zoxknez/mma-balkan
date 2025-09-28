@@ -1,10 +1,10 @@
-import { apiClient, API_CONFIG, buildQueryParams, type ApiResponse } from "./client";
+import { apiClient, API_CONFIG, buildQueryParams } from "./client";
 
 export type Event = {
   id: string;
   name: string;
   startAt: string; // ISO
-  status: "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED";
+  status: "SCHEDULED" | "UPCOMING" | "LIVE" | "COMPLETED" | "CANCELLED";
   city: string;
   country: string;
   mainEvent?: string;
@@ -13,8 +13,10 @@ export type Event = {
   attendees?: number;
 };
 
-export async function getEvents(params: Record<string, unknown>) {
-  const qs = buildQueryParams(params as any);
+export type EventQuery = Partial<{ page: number; limit: number; status: 'SCHEDULED' | 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED'; city: string; country: string; from: string; to: string }>
+
+export async function getEvents(params: EventQuery) {
+  const qs = buildQueryParams(params);
   return apiClient.get<Event[]>(`${API_CONFIG.ENDPOINTS.EVENTS}${qs}`);
 }
 

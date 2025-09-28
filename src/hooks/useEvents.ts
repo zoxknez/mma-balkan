@@ -6,7 +6,7 @@ export type Event = {
   id: string;
   name: string;
   startAt: string;
-  status: "SCHEDULED" | "LIVE" | "COMPLETED" | "CANCELLED";
+  status: "SCHEDULED" | "UPCOMING" | "LIVE" | "COMPLETED" | "CANCELLED";
   city: string;
   country: string;
   mainEvent?: string;
@@ -15,10 +15,10 @@ export type Event = {
   attendees?: number;
 };
 
-export function useEvents(params: Record<string, unknown>) {
+export function useEvents(params: { page?: number; limit?: number; status?: 'SCHEDULED' | 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED' | undefined; city?: string; country?: string }) {
   const key = ["events", params];
   const fetcher = async () => {
-    const qs = buildQueryParams(params as any);
+    const qs = buildQueryParams(params);
     return apiClient.get<Event[]>(`${API_CONFIG.ENDPOINTS.EVENTS}${qs}`);
   };
   const { data, error, isLoading, mutate } = useSWR(key, fetcher);

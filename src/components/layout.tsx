@@ -13,7 +13,6 @@ import {
   Newspaper, 
   MessageCircle,
   Search,
-  Settings,
   User
 } from 'lucide-react';
 import Link from 'next/link';
@@ -36,6 +35,7 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Klubovi', href: '/clubs', icon: MapPin },
     { name: 'Vesti', href: '/news', icon: Newspaper },
     { name: 'Zajednica', href: '/community', icon: MessageCircle },
+    { name: 'Watchlist', href: '/watchlist', icon: User },
   ];
 
   return (

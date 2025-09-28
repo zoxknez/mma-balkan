@@ -1,17 +1,20 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003',
   ENDPOINTS: {
     // Fighters
     FIGHTERS: '/api/fighters',
     FIGHTER_BY_ID: (id: string) => `/api/fighters/${id}`,
     TRENDING_FIGHTERS: '/api/fighters/trending',
+    FIGHTER_FIGHTS: (id: string) => `/api/fighters/${id}/fights`,
+    FIGHTER_UPCOMING: (id: string) => `/api/fighters/${id}/upcoming`,
     
     // Events
     EVENTS: '/api/events',
     EVENT_BY_ID: (id: string) => `/api/events/${id}`,
     UPCOMING_EVENTS: '/api/events/upcoming',
     LIVE_EVENTS: '/api/events/live',
+  EVENT_FIGHTS: (id: string) => `/api/events/${id}/fights`,
     
     // Clubs
     CLUBS: '/api/clubs',
@@ -26,6 +29,8 @@ export const API_CONFIG = {
     NEWS: '/api/news',
     NEWS_BY_ID: (id: string) => `/api/news/${id}`,
     LATEST_NEWS: '/api/news/latest',
+  NEWS_VIEW: (id: string) => `/api/news/${id}/view`,
+  NEWS_LIKE: (id: string) => `/api/news/${id}/like`,
     
     // Predictions
     PREDICTIONS: '/api/predictions',
@@ -76,7 +81,7 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     method: HttpMethod = 'GET',
-    data?: any,
+    data?: unknown,
     headers?: Record<string, string>
   ): Promise<ApiResponse<T>> {
     try {
@@ -89,8 +94,8 @@ class ApiClient {
         },
       };
 
-      if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-        config.body = JSON.stringify(data);
+      if (data !== undefined && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        config.body = JSON.stringify(data as Record<string, unknown>);
       }
 
       const response = await fetch(url, config);
@@ -113,12 +118,12 @@ class ApiClient {
   }
 
   // POST request
-  async post<T>(endpoint: string, data: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, 'POST', data, headers);
   }
 
   // PUT request
-  async put<T>(endpoint: string, data: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, 'PUT', data, headers);
   }
 
@@ -128,7 +133,7 @@ class ApiClient {
   }
 
   // PATCH request
-  async patch<T>(endpoint: string, data: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, data: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, 'PATCH', data, headers);
   }
 }
@@ -148,24 +153,30 @@ export function getAuthHeaders(token?: string): Record<string, string> {
 }
 
 // Query parameters helper
-export function buildQueryParams(params: Record<string, any>): string {
+export function buildQueryParams<T extends object>(params: T): string {
   const searchParams = new URLSearchParams();
   
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
+  for (const [key, value] of Object.entries(params as Record<string, unknown>)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) searchParams.append(key, String(v));
+    } else if (typeof value === 'object') {
+      // flatten simple objects as JSON
+      searchParams.append(key, JSON.stringify(value));
+    } else if (value !== '') {
       searchParams.append(key, String(value));
     }
-  });
+  }
   
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : '';
 }
 
 // Cache helper for client-side caching
-class ApiCache {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+class ApiCache<T = unknown> {
+  private cache = new Map<string, { data: T; timestamp: number; ttl: number }>();
   
-  set(key: string, data: any, ttlSeconds: number = 300): void {
+  set(key: string, data: T, ttlSeconds: number = 300): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -173,7 +184,7 @@ class ApiCache {
     });
   }
   
-  get(key: string): any | null {
+  get(key: string): T | null {
     const entry = this.cache.get(key);
     
     if (!entry) return null;

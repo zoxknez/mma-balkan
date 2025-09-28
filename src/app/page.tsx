@@ -6,9 +6,9 @@ import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ParticleSystem, CyberGrid, FloatingElements } from '@/components/effects/ParticleSystem';
-import { Avatar3D, HolographicDisplay } from '@/components/effects/Avatar3D';
+// import { Avatar3D, HolographicDisplay } from '@/components/effects/Avatar3D';
 import { AnimatedCounter, GlitchText } from '@/components/ui/NeuralComponents';
-import { NeuralStats, QuantumStatBar, MomentumGraph } from '@/components/ui/QuantumStats';
+import { /* NeuralStats, */ QuantumStatBar, MomentumGraph } from '@/components/ui/QuantumStats';
 
 // 3D Holographic Display Component
 const HolographicDisplayLocal = ({ name, wins, losses, className }: { 
@@ -49,13 +49,7 @@ export default function Home() {
     aggression: 80
   };
 
-  const mockMomentumData = [
-    { date: '2024-01', value: 70, result: 'win' as const },
-    { date: '2024-02', value: 75, result: 'win' as const },
-    { date: '2024-03', value: 65, result: 'loss' as const },
-    { date: '2024-04', value: 80, result: 'win' as const },
-    { date: '2024-05', value: 90, result: 'win' as const }
-  ];
+  // Reserved for future dynamic data
 
   return (
     <Layout>

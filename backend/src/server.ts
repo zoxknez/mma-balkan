@@ -8,13 +8,14 @@ import { registerFighterRoutes } from "./routes/fighters";
 import { registerEventRoutes } from "./routes/events";
 import { registerNewsRoutes } from "./routes/news";
 
-const PORT = Number(process.env.PORT || 3001);
-const ORIGIN = process.env.ORIGIN || "http://localhost:3000";
+const BASE_PORT = Number(process.env.PORT || 3003);
+// ORIGIN kept configurable via env in case we tighten CORS later
 
 async function bootstrap() {
   const app = Fastify({ logger: true });
 
-  await app.register(cors, { origin: ORIGIN });
+  // In dev, allow any origin to simplify FE<->BE on different ports
+  await app.register(cors, { origin: true });
   await app.register(swagger, {
     openapi: { info: { title: "MMA Serbia API", version: "0.1.0" } },
   });
@@ -28,7 +29,24 @@ async function bootstrap() {
   await registerNewsRoutes(app);
   await registerErrorHandler(app);
 
-  await app.listen({ port: PORT, host: "0.0.0.0" });
+  // Try preferred port and retry on EADDRINUSE by incrementing
+  let port = BASE_PORT;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await app.listen({ port, host: "0.0.0.0" });
+      app.log.info({ msg: `Bound on port ${port}` });
+      return;
+    } catch (err: unknown) {
+      const e = err as NodeJS.ErrnoException;
+      if (e && e.code === 'EADDRINUSE') {
+        app.log.warn({ msg: `Port ${port} in use, retrying on ${port + 1}` });
+        port += 1;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Unable to bind backend after retries starting from ${BASE_PORT}`);
 }
 
 bootstrap().catch((err) => {

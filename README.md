@@ -4,15 +4,13 @@ Najmodernija web aplikacija za praćenje MMA scene na Balkanu. Spaja sve organiz
 
 ## 🚀 Tehnologije
 
-- **Frontend Framework:** Next.js 14 + React 18
-- **Styling:** Tailwind CSS + Custom Futuristic Design System
-- **Animacije:** Framer Motion + CSS3 Animations
-- **3D Efekti:** Three.js + React Three Fiber (planiran)
-- **State Management:** Zustand
-- **API Calls:** React Query + Custom API Client
-- **UI Komponente:** Radix UI + Custom Components
-- **Typescript:** Full type safety
-- **Icons:** Lucide React
+- Frontend: Next.js 15 + React 19 + TypeScript 5
+- Styling: Tailwind CSS v4 + custom futuristički dizajn
+- Animacije: Framer Motion
+- Efekti: Custom Particle/Cyber Grid (Three.js planiran)
+- Data: SWR hooks + custom API client (ok/fail schema)
+- UI: Custom komponente + Lucide ikone
+- Lint: ESLint 9 (core-web-vitals, typescript)
 
 ## 🎨 Dizajn Koncepti
 
@@ -48,14 +46,22 @@ Najmodernija web aplikacija za praćenje MMA scene na Balkanu. Spaja sve organiz
 
 ## 🔧 Pokretanje
 
-```bash
-# Instaliraj dependencies
-npm install
+```powershell
+# 1) Install deps (root + backend)
+npm install; npm install --prefix backend
 
-# Pokreni development server
+# 2) Env fajlovi
+Copy-Item .env.example .env -Force
+Copy-Item backend\.env.example backend\.env -Force
+
+# 3) Prisma (dev db)
+npm --prefix backend run prisma:generate; npm --prefix backend run prisma:migrate; npm --prefix backend run prisma:seed
+
+# 4) Start dev (frontend + backend concurrently)
 npm run dev
 
-# Otvori http://localhost:3000
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:3001 (Swagger: /docs)
 ```
 
 ## 📁 Struktura Projekta
@@ -74,6 +80,10 @@ src/
 │   ├── api/               # API client i servisi
 │   ├── types.ts           # TypeScript tipovi
 │   └── utils.ts           # Helper funkcije
+backend/
+  ├── src/                 # Fastify v5 API rute
+  ├── prisma/              # Prisma schema + seed
+  └── Dockerfile           # Deploy
 ```
 
 ## 🎯 Ključne Komponente
@@ -120,6 +130,14 @@ const fighters = await FighterService.getFighters({
   limit: 10
 });
 ```
+
+### REST Endpoints (primer)
+- GET /api/fighters, /api/fighters/:id, /api/fighters/trending
+- GET /api/events, /api/events/:id, /api/events/upcoming, /api/events/live
+- GET /api/clubs, /api/clubs/:id
+- GET /api/news, /api/news/:id
+
+Swagger UI: http://localhost:3001/docs
 
 ## 🎨 Custom CSS Klase
 

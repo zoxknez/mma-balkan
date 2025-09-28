@@ -13,11 +13,11 @@ const q = z.object({
 
 export async function registerClubRoutes(app: FastifyInstance) {
   app.get("/api/clubs", async (req, reply) => {
-    const parsed = q.safeParse((req as any).query);
+    const parsed = q.safeParse((req as { query: unknown }).query);
     if (!parsed.success) return reply.code(400).send(fail("Invalid query", parsed.error.issues));
     const { page, limit, search, city, country } = parsed.data;
 
-    const where: any = {};
+  const where: Record<string, unknown> = {};
     if (search)
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -35,7 +35,7 @@ export async function registerClubRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/clubs/:id", async (req, reply) => {
-    const id = (req.params as any).id as string;
+    const id = (req.params as { id?: string }).id as string;
     if (!id) return reply.code(400).send(fail("Missing club id"));
     const club = await prisma.club.findUnique({ where: { id } });
     if (!club) return reply.code(404).send(fail("Club not found"));

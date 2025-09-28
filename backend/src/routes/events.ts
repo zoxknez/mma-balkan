@@ -15,11 +15,11 @@ export async function registerEventRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/events", async (req, reply) => {
-    const parsed = q.safeParse((req as any).query);
+    const parsed = q.safeParse((req as { query: unknown }).query);
     if (!parsed.success) return reply.code(400).send(fail("Invalid query", parsed.error.issues));
     const { page, limit, city, country, status, from, to } = parsed.data;
 
-    const where: any = {};
+  const where: Record<string, unknown> = {};
     if (city) where.city = { contains: city, mode: "insensitive" };
     if (country) where.country = { contains: country, mode: "insensitive" };
     if (status) where.status = status;
@@ -42,5 +42,28 @@ export async function registerEventRoutes(app: FastifyInstance) {
   app.get("/api/events/live", async () => {
     const items = await prisma.event.findMany({ where: { status: { in: ["LIVE"] } }, orderBy: [{ startAt: "desc" }], take: 20 });
     return ok(items);
+  });
+
+  app.get("/api/events/:id", async (req, reply) => {
+    const id = (req.params as { id?: string }).id as string;
+    if (!id) return reply.code(400).send(fail("Missing event id"));
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) return reply.code(404).send(fail("Event not found"));
+    return ok(event);
+  });
+
+  // Event fights (card)
+  app.get("/api/events/:id/fights", async (req, reply) => {
+    const id = (req.params as { id?: string }).id as string;
+    if (!id) return reply.code(400).send(fail("Missing event id"));
+    const fights = await prisma.fight.findMany({
+      where: { eventId: id },
+      orderBy: [{ orderNo: "asc" }],
+      include: {
+        redFighter: true,
+        blueFighter: true,
+      },
+    });
+    return ok(fights);
   });
 }

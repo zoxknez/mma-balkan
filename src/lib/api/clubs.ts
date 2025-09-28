@@ -28,4 +28,5 @@ export async function getClubById(id: string): Promise<ApiResponse<Club>> {
   return apiClient.get<Club>(API_CONFIG.ENDPOINTS.CLUB_BY_ID(id));
 }
 
-export default { getClubs, getClubById };
+const ClubAPI = { getClubs, getClubById };
+export default ClubAPI;

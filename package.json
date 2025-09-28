@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\"",
-    "dev:frontend": "next dev --turbopack",
+    "dev:frontend": "next dev --turbopack -p 3002",
     "dev:backend": "npm --prefix backend run dev",
+    "db:generate": "npm --prefix backend run prisma:generate",
+    "db:migrate": "npm --prefix backend run prisma:migrate",
+    "db:seed": "npm --prefix backend run prisma:seed",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"

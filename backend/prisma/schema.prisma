@@ -43,6 +43,10 @@ model Fighter {
   lastFight   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // relations to Fight
+  redFights   Fight[]  @relation("RedFighter")
+  blueFights  Fight[]  @relation("BlueFighter")
 }
 
 model Event {
@@ -58,6 +62,7 @@ model Event {
   attendees  Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  fights    Fight[]
 }
 
 model News {
@@ -76,4 +81,25 @@ model News {
   publishAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Fight card entries per event
+model Fight {
+  id              String   @id @default(cuid())
+  eventId         String
+  event           Event    @relation(fields: [eventId], references: [id])
+  orderNo         Int      @default(1)
+  section         String   @default("PRELIMS") // MAIN | PRELIMS
+  weightClass     String?
+  status          String   @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  redFighterId    String
+  blueFighterId   String
+  redFighter      Fighter  @relation("RedFighter", fields: [redFighterId], references: [id])
+  blueFighter     Fighter  @relation("BlueFighter", fields: [blueFighterId], references: [id])
+  winnerFighterId String?
+  method          String?  // KO/TKO | SUBMISSION | DECISION | NC
+  round           Int?
+  time            String?  // e.g., 3:12
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Users, Heart, Share2, TrendingUp, Clock, User, Hash, Zap, Target, Activity, Filter, Search, Send, ThumbsUp, MessageSquare } from 'lucide-react';
+import { MessageCircle, Users, Heart, Share2, TrendingUp, Hash, Zap, Target, Activity, Filter, Search, Send, MessageSquare } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
@@ -107,7 +107,7 @@ const mockPosts = [
   }
 ];
 
-const postTypes = ['Sve', 'post', 'analysis', 'tip', 'announcement', 'workout'];
+// const postTypes = ['Sve', 'post', 'analysis', 'tip', 'announcement', 'workout'];
 
 export default function CommunityPage() {
   const [selectedType, setSelectedType] = useState('Sve');
@@ -406,7 +406,7 @@ export default function CommunityPage() {
                         </label>
                         <NeuralSelect
                           value={sortBy}
-                          onChange={(value) => setSortBy(value as any)}
+                          onChange={(value) => setSortBy(value as 'timestamp' | 'likes' | 'comments')}
                           options={[
                             { value: 'timestamp', label: 'Latest First' },
                             { value: 'likes', label: 'Most Liked' },

@@ -7,126 +7,84 @@ import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
 import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
-import { QuantumStatBar } from '@/components/ui/QuantumStats';
+import { useClubs } from '@/hooks/useClubs';
+// import { QuantumStatBar } from '@/components/ui/QuantumStats';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePrefetch } from '@/lib/prefetch';
 
-// Mock data za klubove
-const mockClubs = [
-  {
-    id: '1',
-    name: 'Fight Zone Belgrade',
-    city: 'Beograd',
-    country: 'Srbija',
-    founded: 2015,
-    members: 250,
-    coaches: 8,
-    champions: 12,
-    specialties: ['MMA', 'Muay Thai', 'Brazilian Jiu Jitsu', 'Wrestling'],
-    rating: 4.9,
-    description: 'Jedan od najuspešnijih MMA klubova na Balkanu sa preko 50 profesionalnih boraca.',
-    facilities: ['Professional Octagon', 'Cardio Zone', 'Strength Training', 'Recovery Center'],
-    contact: {
-      phone: '+381 11 123 4567',
-      email: 'info@fightzone.rs',
-      website: 'www.fightzone.rs'
-    },
-    achievements: ['SBC Team Champions 2024', 'Best Gym Balkans 2023'],
-    featured: true
-  },
-  {
-    id: '2',
-    name: 'Croatian Top Team',
-    city: 'Zagreb',
-    country: 'Hrvatska',
-    founded: 2012,
-    members: 180,
-    coaches: 6,
-    champions: 8,
-    specialties: ['MMA', 'Boxing', 'Kickboxing', 'Grappling'],
-    rating: 4.7,
-    description: 'Renomirani klub sa jakim fokusop na striking tehnike i kondicionu pripremu.',
-    facilities: ['2 Training Rings', 'Modern Gym', 'Sauna', 'Nutrition Center'],
-    contact: {
-      phone: '+385 1 234 567',
-      email: 'contact@ctt.hr',
-      website: 'www.croatiantopteam.hr'
-    },
-    achievements: ['FNC Gym of the Year 2023', '15 Pro Fighters Developed'],
-    featured: false
-  },
-  {
-    id: '3',
-    name: 'Macedonian Warriors',
-    city: 'Skopje',
-    country: 'Severna Makedonija',
-    founded: 2018,
-    members: 120,
-    coaches: 5,
-    champions: 6,
-    specialties: ['MMA', 'Karate', 'Wrestling', 'Boxing'],
-    rating: 4.6,
-    description: 'Mladi i ambiciozan klub sa brzim rastom i odličnim rezultatima.',
-    facilities: ['Training Cage', 'Fitness Area', 'Locker Rooms'],
-    contact: {
-      phone: '+389 2 345 678',
-      email: 'info@macedonianwarriors.mk',
-      website: 'www.macedonianwarriors.mk'
-    },
-    achievements: ['Rising Stars Award 2024', '3 ONE Championship Fighters'],
-    featured: false
-  },
-  {
-    id: '4',
-    name: 'Bosnian Lions MMA',
-    city: 'Sarajevo',
-    country: 'Bosna i Hercegovina',
-    founded: 2016,
-    members: 200,
-    coaches: 7,
-    champions: 10,
-    specialties: ['MMA', 'Muay Thai', 'Wrestling', 'Submission Grappling'],
-    rating: 4.8,
-    description: 'Klub poznat po svojoj jačoj ground game školi i odličnim grapplerima.',
-    facilities: ['Mat Area', 'Boxing Ring', 'Weight Room', 'Recovery Pool'],
-    contact: {
-      phone: '+387 33 456 789',
-      email: 'contact@bosnianlions.ba',
-      website: 'www.bosnianlions.ba'
-    },
-    achievements: ['Best Grappling Program 2023', 'UFC Fighter Development'],
-    featured: true
-  }
-];
+type UiClub = { id: string; name: string; city: string; country: string; members?: number | null };
 
 const countries = ['Sve', 'Srbija', 'Hrvatska', 'Severna Makedonija', 'Bosna i Hercegovina', 'Crna Gora', 'Slovenija'];
 const specialties = ['Sve', 'MMA', 'Boxing', 'Muay Thai', 'Brazilian Jiu Jitsu', 'Wrestling', 'Kickboxing'];
 
 export default function ClubsPage() {
+  const prefetch = usePrefetch();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [selectedCountry, setSelectedCountry] = useState('Sve');
   const [selectedSpecialty, setSelectedSpecialty] = useState('Sve');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'members' | 'rating' | 'founded'>('rating');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(8);
+  const { data: apiClubs, pagination, isLoading } = useClubs({
+    page,
+    limit,
+    search: searchTerm || undefined,
+    country: selectedCountry === 'Sve' ? undefined : selectedCountry,
+    city: undefined,
+  } as Parameters<typeof useClubs>[0]);
 
-  const filteredClubs = mockClubs
-    .filter(club => 
-      (selectedCountry === 'Sve' || club.country === selectedCountry) &&
-      (selectedSpecialty === 'Sve' || club.specialties.includes(selectedSpecialty)) &&
-      (club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       club.city.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+  type ApiClub = { id: string; name: string; city: string; country: string; members?: number | null };
+  const clubs: UiClub[] = ((apiClubs as ApiClub[]) || []).map((c) => ({ id: c.id, name: c.name, city: c.city, country: c.country, members: c.members ?? null }));
+
+  const filteredClubs = clubs
     .sort((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'members':
-          return b.members - a.members;
+          return (b.members ?? 0) - (a.members ?? 0);
         case 'rating':
-          return b.rating - a.rating;
+          return 0; // backend nema rating za sada
         case 'founded':
-          return b.founded - a.founded;
+          return 0; // backend nema founded za sada
         default:
           return 0;
       }
     });
+
+  // Initialize state from URL
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    const country = searchParams.get('country') || 'Sve';
+    const sort = (searchParams.get('sort') as 'name' | 'members' | 'rating' | 'founded' | null) || 'rating';
+    const p = Number(searchParams.get('page') || '1') || 1;
+    setSearchTerm(q);
+    setSelectedCountry(country);
+    setSortBy(sort);
+    setPage(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync state to URL
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (searchTerm) sp.set('q', searchTerm);
+    if (selectedCountry !== 'Sve') sp.set('country', selectedCountry);
+    if (sortBy !== 'rating') sp.set('sort', sortBy);
+    if (page > 1) sp.set('page', String(page));
+    router.replace(`${pathname}?${sp.toString()}`);
+  }, [searchTerm, selectedCountry, sortBy, page, router, pathname]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   const getCountryFlag = (country: string) => {
     const flags: { [key: string]: string } = {
@@ -209,9 +167,9 @@ export default function ClubsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 {[
                   { icon: <Shield className="w-8 h-8" />, value: filteredClubs.length, label: "Aktivnih klubova", color: "#22d3ee" },
-                  { icon: <Users className="w-8 h-8" />, value: mockClubs.reduce((sum, c) => sum + c.members, 0), label: "Ukupnih članova", color: "#3b82f6" },
-                  { icon: <Trophy className="w-8 h-8" />, value: mockClubs.reduce((sum, c) => sum + c.champions, 0), label: "Šampiona", color: "#f59e0b" },
-                  { icon: <Target className="w-8 h-8" />, value: Math.round(mockClubs.reduce((sum, c) => sum + c.rating, 0) / mockClubs.length * 10), label: "Avg Rating", color: "#10b981" }
+                  { icon: <Users className="w-8 h-8" />, value: clubs.reduce((sum, c) => sum + (c.members ?? 0), 0), label: "Ukupnih članova", color: "#3b82f6" },
+                  { icon: <Trophy className="w-8 h-8" />, value: 0, label: "Šampiona", color: "#f59e0b" },
+                  { icon: <Target className="w-8 h-8" />, value: 10, label: "Avg Rating", color: "#10b981" }
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
@@ -348,7 +306,7 @@ export default function ClubsPage() {
                         </label>
                         <NeuralSelect
                           value={sortBy}
-                          onChange={(value) => setSortBy(value as any)}
+                          onChange={(value) => setSortBy(value as 'name' | 'members' | 'rating' | 'founded')}
                           options={[
                             { value: 'rating', label: 'Elite Rating' },
                             { value: 'members', label: 'Member Count' },
@@ -410,7 +368,20 @@ export default function ClubsPage() {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {filteredClubs.map((club, index) => (
+                {isLoading && Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`sk-${i}`} className="glass-card p-8">
+                    <Skeleton className="h-6 w-20 mb-4" />
+                    <Skeleton className="h-7 w-64 mb-2" />
+                    <Skeleton className="h-4 w-40 mb-6" />
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                  </div>
+                ))}
+                {!isLoading && filteredClubs.map((club, index) => (
                   <motion.div
                     key={club.id}
                     initial={{ opacity: 0, y: 30, rotateX: -15 }}
@@ -440,18 +411,14 @@ export default function ClubsPage() {
                         {/* Header */}
                         <div className="flex items-start justify-between mb-6">
                           <div className="flex-1">
-                            {/* Featured Badge */}
-                            {club.featured && (
-                              <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 mb-3">
-                                <Star className="w-3 h-3 mr-1" />
-                                FEATURED
-                              </div>
-                            )}
+                            {/* Featured Badge (not available yet) */}
                             
                             {/* Club Name */}
-                            <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
-                              {club.name}
-                            </h3>
+                            <Link href={`/clubs/${club.id}`} className="inline-block" onMouseEnter={() => prefetch(`/clubs/${club.id}`)}>
+                              <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                                {club.name}
+                              </h3>
+                            </Link>
                             
                             {/* Location */}
                             <div className="flex items-center text-gray-300 mb-2">
@@ -459,97 +426,70 @@ export default function ClubsPage() {
                               <span>{getCountryFlag(club.country)} {club.city}, {club.country}</span>
                             </div>
                             
-                            {/* Founded & Rating */}
+                            {/* Founded & Rating placeholders */}
                             <div className="flex items-center space-x-4 text-sm text-gray-400">
-                              <span>Osnovan {club.founded}</span>
+                              <span>Osnovan —</span>
                               <div className="flex items-center">
                                 <Star className="w-4 h-4 mr-1 text-yellow-400 fill-current" />
-                                <span className="text-yellow-400 font-bold">{club.rating}</span>
+                                <span className="text-yellow-400 font-bold">—</span>
                               </div>
                             </div>
                           </div>
                         </div>
                         
-                        {/* Description */}
-                        <p className="text-gray-300 mb-6 leading-relaxed">
-                          {club.description}
-                        </p>
+                        {/* Description placeholder */}
+                        <p className="text-gray-300 mb-6 leading-relaxed">Opis će uskoro biti dostupan.</p>
                         
                         {/* Stats Grid */}
                         <div className="grid grid-cols-3 gap-4 mb-6">
                           <div className="bg-gray-800/30 rounded-lg p-4 text-center">
                             <div className="text-2xl font-bold text-cyan-400 mb-1">
-                              <AnimatedCounter value={club.members} />
+                              <AnimatedCounter value={club.members ?? 0} />
                             </div>
                             <div className="text-xs text-gray-400">Članova</div>
                           </div>
                           <div className="bg-gray-800/30 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-blue-400 mb-1">
-                              <AnimatedCounter value={club.champions} />
-                            </div>
+                            <div className="text-2xl font-bold text-blue-400 mb-1">0</div>
                             <div className="text-xs text-gray-400">Šampiona</div>
                           </div>
                           <div className="bg-gray-800/30 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-green-400 mb-1">
-                              <AnimatedCounter value={club.coaches} />
-                            </div>
+                            <div className="text-2xl font-bold text-green-400 mb-1">0</div>
                             <div className="text-xs text-gray-400">Trenera</div>
                           </div>
                         </div>
                         
-                        {/* Specialties */}
+                        {/* Specialties placeholder */}
                         <div className="mb-6">
                           <h4 className="text-sm font-medium text-cyan-400 mb-3">SPECIALNOSTI:</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {club.specialties.map((specialty, idx) => (
-                              <span
-                                key={idx}
-                                className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-xs font-medium text-cyan-300"
-                              >
-                                {specialty}
-                              </span>
-                            ))}
-                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs text-gray-400">—</div>
                         </div>
                         
-                        {/* Facilities */}
+                        {/* Facilities placeholder */}
                         <div className="mb-6">
                           <h4 className="text-sm font-medium text-blue-400 mb-3">OBJEKTI:</h4>
-                          <div className="grid grid-cols-2 gap-2">
-                            {club.facilities.map((facility, idx) => (
-                              <div key={idx} className="flex items-center text-xs text-gray-300">
-                                <div className="w-2 h-2 bg-blue-400 rounded-full mr-2" />
-                                {facility}
-                              </div>
-                            ))}
-                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">—</div>
                         </div>
                         
-                        {/* Achievements */}
+                        {/* Achievements placeholder */}
                         <div className="mb-6">
                           <h4 className="text-sm font-medium text-yellow-400 mb-3">DOSTIGNUĆA:</h4>
-                          {club.achievements.map((achievement, idx) => (
-                            <div key={idx} className="flex items-start text-xs text-gray-300 mb-1">
-                              <Trophy className="w-3 h-3 mr-2 text-yellow-400 mt-0.5" />
-                              {achievement}
-                            </div>
-                          ))}
+                          <div className="text-xs text-gray-400">—</div>
                         </div>
                         
                         {/* Contact & Actions */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center text-xs text-gray-400">
+                          <div className="space-y-2 text-xs text-gray-400">
+                            <div className="flex items-center">
                               <Phone className="w-3 h-3 mr-2" />
-                              {club.contact.phone}
+                              Kontakt uskoro
                             </div>
-                            <div className="flex items-center text-xs text-gray-400">
+                            <div className="flex items-center">
                               <Mail className="w-3 h-3 mr-2" />
-                              {club.contact.email}
+                              Email uskoro
                             </div>
-                            <div className="flex items-center text-xs text-gray-400">
+                            <div className="flex items-center">
                               <Globe className="w-3 h-3 mr-2" />
-                              {club.contact.website}
+                              Web uskoro
                             </div>
                           </div>
                           
@@ -568,10 +508,12 @@ export default function ClubsPage() {
                               />
                               <span className="relative z-10 font-semibold">Kontaktiraj klub</span>
                             </Button>
-                            <Button variant="outline" size="sm" className="w-full">
-                              <MapPin className="w-4 h-4 mr-2" />
-                              Lokacija
-                            </Button>
+                            <Link href={`/clubs/${club.id}`} className="block" onMouseEnter={() => prefetch(`/clubs/${club.id}`)}>
+                              <Button variant="outline" size="sm" className="w-full">
+                                <MapPin className="w-4 h-4 mr-2" />
+                                Detalji
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -594,6 +536,18 @@ export default function ClubsPage() {
                     />
                   </motion.div>
                 ))}
+              </div>
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center mt-8 gap-4">
+                <Button variant="outline" size="sm" disabled={isLoading || page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                  Prethodna
+                </Button>
+                <span className="text-gray-300 text-sm">
+                  Strana {pagination?.page ?? page} / {pagination?.totalPages ?? '—'}
+                </span>
+                <Button variant="outline" size="sm" disabled={isLoading || (pagination ? page >= pagination.totalPages : false)} onClick={() => setPage(p => p + 1)}>
+                  Sledeća
+                </Button>
               </div>
             </motion.div>
 

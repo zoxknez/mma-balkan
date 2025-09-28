@@ -2,65 +2,83 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Clock, Users, Trophy, Zap, Target, Activity, Filter } from 'lucide-react';
+import { Calendar, MapPin, Users, Trophy, Zap, Target, Activity, Filter } from 'lucide-react';
 import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
 import { GlitchText, AnimatedCounter, NeuralSelect } from '@/components/ui/NeuralComponents';
-import { QuantumStatBar } from '@/components/ui/QuantumStats';
+import { useEvents } from '@/hooks/useEvents';
+// import { QuantumStatBar } from '@/components/ui/QuantumStats';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { usePrefetch } from '@/lib/prefetch';
 
-// Mock data za događaje
-const mockEvents = [
-  {
-    id: '1',
-    name: 'SBC 45: Rakić vs Błachowicz II',
-    date: '2025-12-15',
-    time: '20:00',
-    venue: 'Stark Arena',
-    city: 'Beograd',
-    country: 'Srbija',
-    mainEvent: 'Aleksandar Rakić vs Jan Błachowicz',
-    status: 'upcoming',
-    ticketsAvailable: true,
-    fights: 12,
-    attendees: 18500
-  },
-  {
-    id: '2',
-    name: 'FNC 28: Balkan Storm',
-    date: '2025-11-20',
-    time: '19:30',
-    venue: 'Zagreb Arena',
-    city: 'Zagreb',
-    country: 'Hrvatska',
-    mainEvent: 'Roberto Soldić vs Dricus Du Plessis',
-    status: 'live',
-    ticketsAvailable: false,
-    fights: 10,
-    attendees: 15000
-  },
-  {
-    id: '3',
-    name: 'ONE Championship: Balkan Warriors',
-    date: '2025-10-12',
-    time: '21:00',
-    venue: 'Boris Trajkovski Arena',
-    city: 'Skopje',
-    country: 'Severna Makedonija',
-    mainEvent: 'Darko Stošić vs Anatoly Malykhin',
-    status: 'completed',
-    ticketsAvailable: false,
-    fights: 8,
-    attendees: 12000
-  }
-];
+type UiEvent = {
+  id: string;
+  name: string;
+  city: string;
+  mainEvent?: string | null;
+  status: 'upcoming' | 'live' | 'completed' | 'cancelled';
+  fights: number;
+  attendees?: number | null;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+};
 
 export default function EventsPage() {
+  const prefetch = usePrefetch();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'live' | 'completed'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'venue'>('date');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(8);
 
-  const filteredEvents = mockEvents
-    .filter(event => filterStatus === 'all' || event.status === filterStatus)
+  type BackendStatus = 'SCHEDULED' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
+  const toBackendStatus = (s: typeof filterStatus): BackendStatus | undefined => {
+    switch (s) {
+      case 'live': return 'LIVE';
+      case 'completed': return 'COMPLETED';
+      case 'upcoming': return 'SCHEDULED';
+      default: return undefined;
+    }
+  };
+
+  const { data: apiEvents, isLoading, pagination } = useEvents({ page, limit, status: toBackendStatus(filterStatus) });
+
+  const mapStatus = (s?: string): UiEvent['status'] => {
+    switch (s) {
+      case 'LIVE': return 'live';
+      case 'COMPLETED': return 'completed';
+      case 'CANCELLED': return 'cancelled';
+      case 'UPCOMING':
+      case 'SCHEDULED':
+      default: return 'upcoming';
+    }
+  };
+
+  type ApiEvent = { id: string; name: string; startAt?: string; status?: string; city: string; mainEvent?: string | null; fightsCount?: number; attendees?: number | null };
+  const events: UiEvent[] = (apiEvents as ApiEvent[] || []).map((e) => {
+    const d = e.startAt ? new Date(e.startAt) : new Date(NaN);
+    const date = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+    const time = isNaN(d.getTime()) ? '' : d.toISOString().slice(11, 16);
+    return {
+      id: e.id,
+      name: e.name,
+      city: e.city,
+      mainEvent: e.mainEvent ?? null,
+      status: mapStatus(e.status),
+      fights: e.fightsCount ?? 0,
+      attendees: e.attendees ?? null,
+      date,
+      time,
+    };
+  });
+
+  const filteredEvents = events
     .sort((a, b) => {
       switch (sortBy) {
         case 'date':
@@ -68,11 +86,36 @@ export default function EventsPage() {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'venue':
-          return a.venue.localeCompare(b.venue);
+          return a.city.localeCompare(b.city);
         default:
           return 0;
       }
     });
+
+  // Initialize state from URL
+  useEffect(() => {
+    const status = (searchParams.get('status') as 'all' | 'upcoming' | 'live' | 'completed' | null) || 'all';
+    const sort = (searchParams.get('sort') as 'date' | 'name' | 'venue' | null) || 'date';
+    const p = Number(searchParams.get('page') || '1') || 1;
+    setFilterStatus(status);
+    setSortBy(sort);
+    setPage(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync state to URL
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (filterStatus !== 'all') sp.set('status', filterStatus);
+    if (sortBy !== 'date') sp.set('sort', sortBy);
+    if (page > 1) sp.set('page', String(page));
+    router.replace(`${pathname}?${sp.toString()}`);
+  }, [filterStatus, sortBy, page, router, pathname]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,7 +206,7 @@ export default function EventsPage() {
                   { icon: <Calendar className="w-8 h-8" />, value: filteredEvents.length, label: "Događaja", color: "#8b5cf6" },
                   { icon: <Activity className="w-8 h-8" />, value: filteredEvents.filter(e => e.status === 'live').length, label: "Live sada", color: "#ef4444" },
                   { icon: <Trophy className="w-8 h-8" />, value: filteredEvents.filter(e => e.status === 'upcoming').length, label: "Nadolazeći", color: "#3b82f6" },
-                  { icon: <Users className="w-8 h-8" />, value: mockEvents.reduce((sum, e) => sum + e.attendees, 0), label: "Ukupno gledalaca", color: "#10b981" }
+                  { icon: <Users className="w-8 h-8" />, value: filteredEvents.reduce((sum, e) => sum + (e.attendees ?? 0), 0), label: "Ukupno gledalaca", color: "#10b981" }
                 ].map((stat, index) => (
                   <motion.div
                     key={index}
@@ -224,7 +267,7 @@ export default function EventsPage() {
                         </label>
                         <NeuralSelect
                           value={filterStatus}
-                          onChange={(value) => setFilterStatus(value as any)}
+                          onChange={(value) => setFilterStatus(value as 'all' | 'upcoming' | 'live' | 'completed')}
                           options={[
                             { value: 'all', label: 'Svi događaji' },
                             { value: 'upcoming', label: 'Nadolazeći' },
@@ -250,7 +293,7 @@ export default function EventsPage() {
                         </label>
                         <NeuralSelect
                           value={sortBy}
-                          onChange={(value) => setSortBy(value as any)}
+                          onChange={(value) => setSortBy(value as 'date' | 'name' | 'venue')}
                           options={[
                             { value: 'date', label: 'Chronological' },
                             { value: 'name', label: 'Alpha Protocol' },
@@ -311,7 +354,25 @@ export default function EventsPage() {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {filteredEvents.map((event, index) => (
+                {isLoading && Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`sk-${i}`} className="glass-card p-6">
+                    <div className="mb-4">
+                      <Skeleton className="h-6 w-28 rounded-full mb-3" />
+                      <Skeleton className="h-5 w-64 mb-2" />
+                      <Skeleton className="h-4 w-40" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Skeleton className="h-10 w-24" />
+                      <Skeleton className="h-10 w-24" />
+                      <Skeleton className="h-10 w-24" />
+                    </div>
+                  </div>
+                ))}
+                {!isLoading && filteredEvents.map((event, index) => (
                   <motion.div
                     key={event.id}
                     initial={{ opacity: 0, y: 30, rotateX: -15 }}
@@ -365,11 +426,11 @@ export default function EventsPage() {
                           </div>
                           <div className="flex items-center text-gray-300">
                             <MapPin className="w-4 h-4 mr-2 text-blue-400" />
-                            <span>{event.venue}, {event.city}</span>
+                            <span>{event.city}</span>
                           </div>
                           <div className="flex items-center text-gray-300">
                             <Users className="w-4 h-4 mr-2 text-green-400" />
-                            <span>{event.attendees.toLocaleString()} gledalaca</span>
+                            <span>{(event.attendees ?? 0).toLocaleString()} gledalaca</span>
                           </div>
                         </div>
                         
@@ -406,15 +467,15 @@ export default function EventsPage() {
                             </Button>
                           )}
                           
-                          {event.status === 'upcoming' && event.ticketsAvailable && (
+                          {event.status === 'upcoming' && (
                             <Button variant="neon" size="sm" className="flex-1">
                               Kupi karte
                             </Button>
                           )}
                           
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Detalji
-                          </Button>
+                          <Link href={`/events/${event.id}`} className="flex-1" onMouseEnter={() => prefetch(`/events/${event.id}`)}>
+                            <Button variant="outline" size="sm" className="w-full">Detalji</Button>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -436,6 +497,18 @@ export default function EventsPage() {
                     />
                   </motion.div>
                 ))}
+              </div>
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center mt-8 gap-4">
+                <Button variant="outline" size="sm" disabled={isLoading || page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                  Prethodna
+                </Button>
+                <span className="text-gray-300 text-sm">
+                  Strana {pagination?.page ?? page} / {pagination?.totalPages ?? '—'}
+                </span>
+                <Button variant="outline" size="sm" disabled={isLoading || (pagination ? page >= pagination.totalPages : false)} onClick={() => setPage((p) => p + 1)}>
+                  Sledeća
+                </Button>
               </div>
             </motion.div>
 

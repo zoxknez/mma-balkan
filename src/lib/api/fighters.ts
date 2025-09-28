@@ -1,5 +1,5 @@
 import { apiClient, API_CONFIG, buildQueryParams, ApiResponse } from './client';
-import { Fighter, WeightClass, FightingStance } from '@/lib/types';
+import { Fighter, WeightClass } from '@/lib/types';
 
 // Fighter query parameters
 export interface FighterQueryParams {
@@ -93,20 +93,22 @@ export class FighterService {
   }
 
   // Get fighter's fight history
-  static async getFighterFights(fighterId: string): Promise<ApiResponse<any[]>> {
-    return apiClient.get<any[]>(`${API_CONFIG.ENDPOINTS.FIGHTER_BY_ID(fighterId)}/fights`);
+  static async getFighterFights(fighterId: string): Promise<ApiResponse<unknown[]>> {
+    return apiClient.get<unknown[]>(`${API_CONFIG.ENDPOINTS.FIGHTER_BY_ID(fighterId)}/fights`);
   }
 
   // Get fighter's upcoming fights
-  static async getFighterUpcomingFights(fighterId: string): Promise<ApiResponse<any[]>> {
-    return apiClient.get<any[]>(`${API_CONFIG.ENDPOINTS.FIGHTER_BY_ID(fighterId)}/upcoming`);
+  static async getFighterUpcomingFights(fighterId: string): Promise<ApiResponse<unknown[]>> {
+    return apiClient.get<unknown[]>(`${API_CONFIG.ENDPOINTS.FIGHTER_BY_ID(fighterId)}/upcoming`);
   }
 }
 
 // External API integrations for fighter data
 export class ExternalFighterDataService {
   // Get fighter data from Wikidata
-  static async getWikidataFighter(fighterName: string): Promise<any> {
+  static async getWikidataFighter(
+    fighterName: string
+  ): Promise<unknown[]> {
     const query = `
       SELECT ?fighter ?fighterLabel ?birthDate ?height ?countryLabel ?image WHERE {
         ?fighter wdt:P106 wd:Q11124849 ; # Mixed martial artist
@@ -125,8 +127,9 @@ export class ExternalFighterDataService {
     
     try {
       const response = await fetch(url);
-      const data = await response.json();
-      return data.results?.bindings || [];
+      const data: unknown = await response.json();
+      const bindings = (data as { results?: { bindings?: unknown[] } })?.results?.bindings;
+      return bindings ?? [];
     } catch (error) {
       console.error('Wikidata API error:', error);
       return [];
@@ -134,13 +137,16 @@ export class ExternalFighterDataService {
   }
 
   // Get fighter data from Wikipedia
-  static async getWikipediaFighter(fighterName: string): Promise<any> {
+  static async getWikipediaFighter(
+    fighterName: string
+  ): Promise<unknown | null> {
     const searchUrl = `${API_CONFIG.ENDPOINTS.WIKIPEDIA_API}/page/summary/${encodeURIComponent(fighterName)}`;
     
     try {
       const response = await fetch(searchUrl);
       if (response.ok) {
-        return await response.json();
+        const json: unknown = await response.json();
+        return json;
       }
       return null;
     } catch (error) {
@@ -150,13 +156,16 @@ export class ExternalFighterDataService {
   }
 
   // Get UFC fighter data from TheSportsDB
-  static async getUFCFighter(fighterName: string): Promise<any> {
+  static async getUFCFighter(
+    fighterName: string
+  ): Promise<unknown[]> {
     const url = `${API_CONFIG.ENDPOINTS.THESPORTSDB_API}/3/searchplayers.php?p=${encodeURIComponent(fighterName)}`;
     
     try {
       const response = await fetch(url);
-      const data = await response.json();
-      return data.player || [];
+      const data: unknown = await response.json();
+      const players = (data as { player?: unknown[] })?.player;
+      return players ?? [];
     } catch (error) {
       console.error('TheSportsDB API error:', error);
       return [];
