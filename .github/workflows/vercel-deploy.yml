@@ -13,6 +13,18 @@ on:
         options:
           - prod
           - preview
+      backend_url:
+        description: "Optionally set NEXT_PUBLIC_API_URL before build (e.g., https://api.mma-balkan.org)"
+        required: false
+        default: ""
+      site_url:
+        description: "Optionally set NEXT_PUBLIC_SITE_URL before build (e.g., https://mma-balkan.org)"
+        required: false
+        default: ""
+      domain:
+        description: "Optionally add custom domain to Vercel (e.g., mma-balkan.org)"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -32,6 +44,14 @@ jobs:
             echo "deploy_flag=--prebuilt --prod" >> $GITHUB_OUTPUT
             echo "prod_flag=--prod" >> $GITHUB_OUTPUT
           fi
+      - name: Setup variables
+        id: vars
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "preview" ]; then
+            echo "env_alias=preview" >> $GITHUB_OUTPUT
+          else
+            echo "env_alias=production" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -46,6 +66,22 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
+
+      - name: (Optional) Set NEXT_PUBLIC_API_URL
+        if: ${{ github.event.inputs.backend_url != '' }}
+        run: |
+          echo "${{ github.event.inputs.backend_url }}" | vercel env add NEXT_PUBLIC_API_URL ${{ steps.vars.outputs.env_alias }} --token ${{ secrets.VERCEL_TOKEN }} || vercel env rm NEXT_PUBLIC_API_URL ${{ steps.vars.outputs.env_alias }} --yes --token ${{ secrets.VERCEL_TOKEN }} && echo "${{ github.event.inputs.backend_url }}" | vercel env add NEXT_PUBLIC_API_URL ${{ steps.vars.outputs.env_alias }} --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: (Optional) Set NEXT_PUBLIC_SITE_URL
+        if: ${{ github.event.inputs.site_url != '' }}
+        run: |
+          echo "${{ github.event.inputs.site_url }}" | vercel env add NEXT_PUBLIC_SITE_URL ${{ steps.vars.outputs.env_alias }} --token ${{ secrets.VERCEL_TOKEN }} || vercel env rm NEXT_PUBLIC_SITE_URL ${{ steps.vars.outputs.env_alias }} --yes --token ${{ secrets.VERCEL_TOKEN }} && echo "${{ github.event.inputs.site_url }}" | vercel env add NEXT_PUBLIC_SITE_URL ${{ steps.vars.outputs.env_alias }} --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Pull Vercel Environment Info
         run: vercel pull --yes --environment=production --token ${{ secrets.VERCEL_TOKEN }}
@@ -64,6 +100,25 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: (Optional) Add custom domain
+        if: ${{ github.event.inputs.domain != '' }}
+        run: vercel domains add ${{ github.event.inputs.domain }} --token ${{ secrets.VERCEL_TOKEN }} || true
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Resolve site for smoke test
+        id: site
+        run: |
+          SITE_INPUT="${{ github.event.inputs.site_url }}"
+          if [ -z "$SITE_INPUT" ]; then SITE_INPUT="https://mma-balkan.org"; fi
+          echo "site=$SITE_INPUT" >> $GITHUB_OUTPUT
+
+      - name: Post-deploy smoke test
+        env:
+          SITE: ${{ steps.site.outputs.site }}
+        run: npm run smoke
 
       # Optional: Ensure domain exists (will no-op if already added)
       # - name: Add domain to Vercel
