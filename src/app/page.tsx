@@ -7,9 +7,6 @@ import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CyberGrid } from '@/components/effects/ParticleSystem';
-import Skeleton from '@/components/ui/skeleton';
-import { useUpcomingEvents } from '@/hooks/useEvents';
-import { useTrendingFighters } from '@/hooks/useFighters';
 import { AnimatedCounter, GlitchText } from '@/components/ui/NeuralComponents';
 import { /* NeuralStats, */ QuantumStatBar, MomentumGraph } from '@/components/ui/QuantumStats';
 
@@ -81,7 +78,7 @@ export default function Home() {
             </div>
           </motion.div>
 
-          <HomepageSections />
+          {/* Removed duplicate sections (Uskoro / Trending borci) */}
         </div>
       </section>
 
@@ -535,53 +532,5 @@ export default function Home() {
             </div>
       </motion.div>
     </Layout>
-  );
-}
-
-type UpcomingEventItem = { id: string; name: string; startAt: string };
-import type { Fighter as FighterType } from '@/lib/types';
-
-function HomepageSections() {
-  const { data: upcoming, isLoading: loadingEvents } = useUpcomingEvents();
-  const { data: trending, isLoading: loadingFighters } = useTrendingFighters(8);
-  return (
-    <section className="pb-16 relative z-10">
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="glass-card p-6">
-          <h2 className="text-white font-semibold mb-4">Uskoro</h2>
-          {loadingEvents ? (
-            <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
-          ) : upcoming.length ? (
-            <ul className="divide-y divide-white/5">
-              {upcoming.map((e: UpcomingEventItem) => (
-                <li key={e.id} className="py-3 flex items-center justify-between text-sm">
-                  <Link href={`/events/${e.id}`} className="text-white hover:text-purple-300">{e.name}</Link>
-                  <span className="text-gray-400">{new Date(e.startAt).toLocaleDateString('sr-RS')}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-gray-400 text-sm">Nema nadolazećih događaja.</div>
-          )}
-        </div>
-        <div className="glass-card p-6">
-          <h2 className="text-white font-semibold mb-4">Trending borci</h2>
-          {loadingFighters ? (
-            <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-8" />)}</div>
-          ) : trending.length ? (
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {trending.map((f: FighterType) => (
-                <li key={f.id} className="flex items-center justify-between">
-                  <Link href={`/fighters/${f.id}`} className="text-white hover:text-green-300">{f.name}</Link>
-                  <span className="text-gray-400 text-xs">{f.wins}-{f.losses}-{f.draws}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-gray-400 text-sm">Nema podataka.</div>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }
