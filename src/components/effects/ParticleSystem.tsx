@@ -1,138 +1,133 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 
 interface ParticleSystemProps {
   particleCount?: number;
   color?: string;
   className?: string;
+  connectionDistance?: number;
 }
 
 interface Particle {
-  id: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
   opacity: number;
-  life: number;
+}
+
+// Convert hex color to RGB for Canvas
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 0, g: 255, b: 136 };
 }
 
 export function ParticleSystem({ 
   particleCount = 50, 
   color = '#00ff88',
+  connectionDistance = 150,
   className = '' 
 }: ParticleSystemProps) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const animationFrameRef = useRef<number | undefined>(undefined);
+  const rgbColor = hexToRgb(color);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-    };
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    // Set canvas size
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     // Initialize particles
-    const initialParticles: Particle[] = Array.from({ length: particleCount }, (_, i) => ({
-      id: i,
-      x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-      y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+    particlesRef.current = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
       vx: (Math.random() - 0.5) * 0.5,
       vy: (Math.random() - 0.5) * 0.5,
       size: Math.random() * 2 + 1,
-      opacity: Math.random() * 0.5 + 0.1,
-      life: Math.random() * 100 + 50
+      opacity: Math.random() * 0.5 + 0.1
     }));
 
-    setParticles(initialParticles);
-
     // Animation loop
-    const animateParticles = () => {
-      if (typeof window === 'undefined') return;
-      setParticles(prev => prev.map(particle => {
-        const newX = particle.x + particle.vx;
-        const newY = particle.y + particle.vy;
-        
-        return {
-          ...particle,
-          x: newX > window.innerWidth ? 0 : newX < 0 ? window.innerWidth : newX,
-          y: newY > window.innerHeight ? 0 : newY < 0 ? window.innerHeight : newY,
-          life: particle.life - 0.1,
-        };
-      }).filter(particle => particle.life > 0).concat(
-        // Add new particles to replace dead ones
-        Array.from({ length: Math.max(0, particleCount - prev.length) }, (_, i) => ({
-          id: Date.now() + i,
-          x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-          y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          size: Math.random() * 2 + 1,
-          opacity: Math.random() * 0.5 + 0.1,
-          life: Math.random() * 100 + 50
-        }))
-      ));
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw particles
+      particlesRef.current.forEach(particle => {
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Wrap around edges
+        if (particle.x > canvas.width) particle.x = 0;
+        if (particle.x < 0) particle.x = canvas.width;
+        if (particle.y > canvas.height) particle.y = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, ${particle.opacity})`;
+        ctx.fill();
+      });
+
+      // Draw connections
+      for (let i = 0; i < particlesRef.current.length; i++) {
+        for (let j = i + 1; j < particlesRef.current.length; j++) {
+          const particle = particlesRef.current[i];
+          const other = particlesRef.current[j];
+          const dx = particle.x - other.x;
+          const dy = particle.y - other.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < connectionDistance) {
+            const opacity = ((connectionDistance - distance) / connectionDistance) * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.strokeStyle = `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, ${opacity})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    const interval = setInterval(animateParticles, 50);
+    animate();
 
     return () => {
-      window.removeEventListener('resize', updateDimensions);
-      clearInterval(interval);
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
-  }, [particleCount]);
+  }, [particleCount, color, connectionDistance, rgbColor.r, rgbColor.g, rgbColor.b]);
 
   return (
     <div className={`fixed inset-0 pointer-events-none z-0 ${className}`}>
-      <svg width={dimensions.width} height={dimensions.height} className="absolute inset-0">
-        {particles.map(particle => (
-          <motion.circle
-            key={particle.id}
-            cx={particle.x}
-            cy={particle.y}
-            r={particle.size}
-            fill={color}
-            opacity={particle.opacity}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-          />
-        ))}
-        
-        {/* Connect nearby particles */}
-        {particles.map((particle, i) => 
-          particles.slice(i + 1).map((other, j) => {
-            const distance = Math.sqrt(
-              Math.pow(particle.x - other.x, 2) + Math.pow(particle.y - other.y, 2)
-            );
-            
-            if (distance < 150) {
-              const opacity = Math.max(0, (150 - distance) / 150) * 0.2;
-              return (
-                <line
-                  key={`${i}-${j}`}
-                  x1={particle.x}
-                  y1={particle.y}
-                  x2={other.x}
-                  y2={other.y}
-                  stroke={color}
-                  strokeWidth="0.5"
-                  opacity={opacity}
-                />
-              );
-            }
-            return null;
-          })
-        )}
-      </svg>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0"
+        style={{ opacity: 0.6 }}
+      />
     </div>
   );
 }
@@ -162,51 +157,47 @@ export function CyberGrid() {
   );
 }
 
-// Floating Elements
+// Floating Elements (CSS-only animation)
 export function FloatingElements() {
   const elements = Array.from({ length: 8 }, (_, i) => ({
     id: i,
     delay: i * 0.5,
     duration: 10 + Math.random() * 5,
     size: 20 + Math.random() * 30,
-    opacity: 0.1 + Math.random() * 0.2
+    opacity: 0.1 + Math.random() * 0.2,
+    startX: Math.random() * 100,
+    startY: Math.random() * 100
   }));
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0">
-      {elements.map(element => (
-        <motion.div
-          key={element.id}
-          className="absolute"
-          style={{
-            width: element.size,
-            height: element.size,
-            background: 'linear-gradient(45deg, #00ff88, #00ccff)',
-            borderRadius: '50%',
-            filter: 'blur(1px)',
-            opacity: element.opacity
-          }}
-          animate={{
-            x: [
-              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-              Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920)
-            ],
-            y: [
-              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
-              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
-              Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)
-            ],
-            scale: [1, 1.5, 1]
-          }}
-          transition={{
-            duration: element.duration,
-            repeat: Infinity,
-            delay: element.delay,
-            ease: "linear"
-          }}
-        />
-      ))}
-    </div>
+    <>
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30vw, 20vh) scale(1.5); }
+          66% { transform: translate(-20vw, 40vh) scale(1); }
+        }
+      `}</style>
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {elements.map(element => (
+          <div
+            key={element.id}
+            className="absolute"
+            style={{
+              width: element.size,
+              height: element.size,
+              background: 'linear-gradient(45deg, #00ff88, #00ccff)',
+              borderRadius: '50%',
+              filter: 'blur(1px)',
+              opacity: element.opacity,
+              left: `${element.startX}%`,
+              top: `${element.startY}%`,
+              animation: `float ${element.duration}s linear infinite`,
+              animationDelay: `${element.delay}s`
+            }}
+          />
+        ))}
+      </div>
+    </>
   );
 }
