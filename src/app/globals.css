@@ -183,7 +183,22 @@ html {
 .holo-halo { animation: halo-ping 3.4s ease-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .holo-ring, .holo-halo { animation: none !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .holo-ring, 
+  .holo-halo,
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce {
+    animation: none !important;
+  }
 }
 
 /* Loading Animation */
