@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: { bodySizeLimit: '2mb' },
-    // turbo: {}, // enable/adjust po potrebi
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   // Webpack hook koristi se samo kada nije Turbopack, da ne trigeruje upozorenje
   webpack: isTurbopack ? undefined : (config) => {
