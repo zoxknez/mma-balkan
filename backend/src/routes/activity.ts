@@ -45,8 +45,8 @@ export async function registerActivityRoutes(app: FastifyInstance) {
     ];
 
     const interval = setInterval(() => {
-      const user = users[Math.floor(Math.random() * users.length)];
-      const action = actions[Math.floor(Math.random() * actions.length)];
+      const user = users[Math.floor(Math.random() * users.length)] ?? 'MMA Balkan korisnik';
+      const action = actions[Math.floor(Math.random() * actions.length)] ?? 'uradio nešto sjajno';
       const item: Activity = {
         id: `a${Date.now()}`,
         user,

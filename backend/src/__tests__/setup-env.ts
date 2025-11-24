@@ -1,0 +1,12 @@
+process.env.NODE_ENV ??= 'test';
+process.env.PORT ??= '4000';
+process.env.DATABASE_URL ??= 'postgresql://postgres:postgres@localhost:5432/mma_backend_test?schema=public';
+process.env.JWT_SECRET ??= 'test-access-secret-should-be-at-least-32-chars';
+process.env.JWT_REFRESH_SECRET ??= 'test-refresh-secret-definitely-long-enough';
+process.env.JWT_ACCESS_TOKEN_EXPIRES_IN ??= '15m';
+process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ??= '7d';
+process.env.RATE_LIMIT_MAX ??= '100';
+process.env.RATE_LIMIT_WINDOW_MS ??= '60000';
+process.env.BCRYPT_ROUNDS ??= '10';
+process.env.ALLOWED_ORIGINS ??= '';
+process.env.MOCK_PRISMA ??= 'true';

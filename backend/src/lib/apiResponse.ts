@@ -17,14 +17,32 @@ export type ApiError = {
   issues?: unknown;
 };
 
-export const ok = <T>(data: T, pagination?: Pagination): ApiResponse<T> => ({
-  success: true,
-  data,
-  pagination,
-});
+export const ok = <T>(data: T, pagination?: Pagination): ApiResponse<T> => {
+  if (pagination) {
+    return {
+      success: true,
+      data,
+      pagination,
+    };
+  }
 
-export const fail = (error: string, issues?: unknown): ApiError => ({
-  success: false,
-  error,
-  issues,
-});
+  return {
+    success: true,
+    data,
+  };
+};
+
+export const fail = (error: string, issues?: unknown): ApiError => {
+  if (typeof issues !== 'undefined') {
+    return {
+      success: false,
+      error,
+      issues,
+    };
+  }
+
+  return {
+    success: false,
+    error,
+  };
+};

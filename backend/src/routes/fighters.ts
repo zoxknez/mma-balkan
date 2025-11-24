@@ -1,83 +1,176 @@
 import type { FastifyInstance } from "fastify";
-import { ok, fail } from "../lib/apiResponse";
-import { prisma } from "../lib/prisma";
 import { z } from "zod";
+import rateLimit from "@fastify/rate-limit";
+import { Prisma } from "@prisma/client";
+import { ok, fail } from "../lib/apiResponse";
+import { fighterSchemas } from "../lib/validation";
+import { createValidatedRoute, ValidatedRequest } from "../lib/validationMiddleware";
+import { authenticate, requireRole, rateLimitConfig } from "../lib/auth";
+import { FighterService } from "../services/fighter.service";
+import { NotFoundError, ValidationError } from "../lib/errors";
 
 export async function registerFighterRoutes(app: FastifyInstance) {
-  const q = z.object({
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
-    search: z.string().optional(),
-    country: z.string().optional(),
-    weightClass: z.string().optional(),
-    active: z.coerce.boolean().optional(),
-  });
+  // Apply rate limiting to all fighter routes
+  await app.register(rateLimit, { ...rateLimitConfig.api });
 
-  app.get("/api/fighters", async (req, reply) => {
-    const parsed = q.safeParse((req as { query: unknown }).query);
-    if (!parsed.success) return reply.code(400).send(fail("Invalid query", parsed.error.issues));
-    const { page, limit, search, country, weightClass, active } = parsed.data;
+  // GET /api/fighters - List fighters with validation
+  app.get("/api/fighters", createValidatedRoute(
+    { query: fighterSchemas.query },
+    async (req: ValidatedRequest<unknown, typeof fighterSchemas.query._type>, reply) => {
+      try {
+        const { page, limit, search, country, weightClass, active } = req.validatedQuery!;
 
-  const where: Record<string, unknown> = {};
-    if (search)
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { nickname: { contains: search, mode: "insensitive" } },
-      ];
-    if (country) where.country = { contains: country, mode: "insensitive" };
-    if (weightClass) where.weightClass = weightClass;
-    if (active !== undefined) where.isActive = active;
+        const filters = {
+          page,
+          limit,
+          ...(search ? { search } : {}),
+          ...(country ? { country } : {}),
+          ...(typeof weightClass !== 'undefined' ? { weightClass } : {}),
+          ...(typeof active !== 'undefined' ? { isActive: active } : {}),
+        };
 
-    const [total, items] = await Promise.all([
-      prisma.fighter.count({ where }),
-      prisma.fighter.findMany({ where, orderBy: [{ wins: "desc" }, { name: "asc" }], skip: (page - 1) * limit, take: limit }),
-    ]);
+        const result = await FighterService.getFighters(filters);
 
-    return ok(items, { page, limit, total, totalPages: Math.ceil(total / limit) });
-  });
+        return ok(result.data, result.pagination);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          return reply.code(400).send(fail(error.message));
+        }
+        throw error;
+      }
+    }
+  ));
 
-  app.get("/api/fighters/trending", async (req) => {
-    const limit = Number((req as { query?: { limit?: number | string } }).query?.limit ?? 10);
-    // Simple trending heuristic: most wins and recently updated
-    const items = await prisma.fighter.findMany({ orderBy: [{ wins: "desc" }, { updatedAt: "desc" }], take: Math.min(limit, 50) });
-    return ok(items);
-  });
+  // GET /api/fighters/trending - Trending fighters
+  app.get("/api/fighters/trending", createValidatedRoute(
+    { query: z.object({ limit: z.coerce.number().int().min(1).max(50).default(10) }) },
+    async (req: ValidatedRequest<unknown, { limit: number }>, reply) => {
+      try {
+        const { limit } = req.validatedQuery!;
+        const result = await FighterService.getTrendingFighters(limit);
+        return ok(result.data);
+      } catch (error) {
+        throw error;
+      }
+    }
+  ));
 
-  app.get("/api/fighters/:id", async (req, reply) => {
-    const id = (req.params as { id?: string }).id as string;
-    if (!id) return reply.code(400).send(fail("Missing fighter id"));
-    const fighter = await prisma.fighter.findUnique({ where: { id } });
-    if (!fighter) return reply.code(404).send(fail("Fighter not found"));
-    return ok(fighter);
-  });
+  // GET /api/fighters/:id - Get single fighter
+  app.get("/api/fighters/:id", createValidatedRoute(
+    { params: z.object({ id: z.string().cuid() }) },
+    async (req: ValidatedRequest<unknown, unknown, { id: string }>, reply) => {
+      try {
+        const { id } = req.validatedParams!;
+        const result = await FighterService.getFighterById(id);
+        return ok(result.data);
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          return reply.code(404).send(fail(error.message));
+        }
+        throw error;
+      }
+    }
+  ));
+
+  // POST /api/fighters - Create fighter (Admin only)
+  app.post("/api/fighters", {
+    preHandler: [authenticate, requireRole(['admin'])],
+  }, createValidatedRoute(
+      { body: fighterSchemas.create },
+      async (req: ValidatedRequest<typeof fighterSchemas.create._type>, reply) => {
+        try {
+          const data = req.validatedBody! as Prisma.FighterCreateInput;
+          const result = await FighterService.createFighter(data);
+          return reply.code(201).send(ok(result.data));
+        } catch (error) {
+          if (error instanceof ValidationError) {
+            return reply.code(400).send(fail(error.message));
+          }
+          throw error;
+        }
+      }
+    )
+  );
+
+  // PUT /api/fighters/:id - Update fighter (Admin only)
+  app.put("/api/fighters/:id", {
+    preHandler: [authenticate, requireRole(['admin'])],
+  }, createValidatedRoute(
+      { 
+        params: z.object({ id: z.string().cuid() }),
+        body: fighterSchemas.update 
+      },
+      async (req: ValidatedRequest<typeof fighterSchemas.update._type, unknown, { id: string }>, reply) => {
+        try {
+          const { id } = req.validatedParams!;
+          const data = req.validatedBody! as Prisma.FighterUpdateInput;
+          
+          const result = await FighterService.updateFighter(id, data);
+          return ok(result.data);
+        } catch (error) {
+          if (error instanceof NotFoundError) {
+            return reply.code(404).send(fail(error.message));
+          }
+          if (error instanceof ValidationError) {
+            return reply.code(400).send(fail(error.message));
+          }
+          throw error;
+        }
+      }
+    )
+  );
+
+  // DELETE /api/fighters/:id - Soft delete fighter (Admin only)
+  app.delete("/api/fighters/:id", {
+    preHandler: [authenticate, requireRole(['admin'])],
+  }, createValidatedRoute(
+      { params: z.object({ id: z.string().cuid() }) },
+      async (req: ValidatedRequest<unknown, unknown, { id: string }>, reply) => {
+        try {
+          const { id } = req.validatedParams!;
+          const result = await FighterService.deleteFighter(id);
+          return ok(result);
+        } catch (error) {
+          if (error instanceof NotFoundError) {
+            return reply.code(404).send(fail(error.message));
+          }
+          throw error;
+        }
+      }
+    )
+  );
 
   // Fighter fight history (completed)
-  app.get("/api/fighters/:id/fights", async (req, reply) => {
-    const id = (req.params as { id?: string }).id as string;
-    if (!id) return reply.code(400).send(fail("Missing fighter id"));
-    const fights = await prisma.fight.findMany({
-      where: {
-        OR: [{ redFighterId: id }, { blueFighterId: id }],
-        status: "COMPLETED",
-      },
-      orderBy: [{ updatedAt: "desc" }],
-      include: { event: true, redFighter: true, blueFighter: true },
-    });
-    return ok(fights);
-  });
+  app.get("/api/fighters/:id/fights", createValidatedRoute(
+    { params: z.object({ id: z.string().cuid() }) },
+    async (req: ValidatedRequest<unknown, unknown, { id: string }>, reply) => {
+      try {
+        const { id } = req.validatedParams!;
+        const result = await FighterService.getFighterFights(id);
+        return ok(result.data);
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          return reply.code(404).send(fail(error.message));
+        }
+        throw error;
+      }
+    }
+  ));
 
   // Fighter upcoming fights
-  app.get("/api/fighters/:id/upcoming", async (req, reply) => {
-    const id = (req.params as { id?: string }).id as string;
-    if (!id) return reply.code(400).send(fail("Missing fighter id"));
-    const fights = await prisma.fight.findMany({
-      where: {
-        OR: [{ redFighterId: id }, { blueFighterId: id }],
-        status: { in: ["SCHEDULED", "UPCOMING"] },
-      },
-      orderBy: [{ orderNo: "asc" }],
-      include: { event: true, redFighter: true, blueFighter: true },
-    });
-    return ok(fights);
-  });
+  app.get("/api/fighters/:id/upcoming", createValidatedRoute(
+    { params: z.object({ id: z.string().cuid() }) },
+    async (req: ValidatedRequest<unknown, unknown, { id: string }>, reply) => {
+      try {
+        const { id } = req.validatedParams!;
+        const result = await FighterService.getFighterUpcomingFights(id);
+        return ok(result.data);
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          return reply.code(404).send(fail(error.message));
+        }
+        throw error;
+      }
+    }
+  ));
 }
