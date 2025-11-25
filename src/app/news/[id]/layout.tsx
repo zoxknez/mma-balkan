@@ -1,61 +1,116 @@
-import type { Metadata } from 'next';
+import { Metadata } from 'next';
+import { generateNewsStructuredData } from '@/lib/seo';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
-if (process.env.NODE_ENV === 'production') {
-  const allowLocalSite = /localhost|127\.0\.0\.1/.test(SITE);
-  const allowLocalApi = /localhost|127\.0\.0\.1/.test(API);
-  if (!allowLocalSite && !SITE.startsWith('https://')) throw new Error('NEXT_PUBLIC_SITE_URL mora biti https u produkciji');
-  if (!allowLocalApi && !API.startsWith('https://')) throw new Error('NEXT_PUBLIC_API_URL mora biti https u produkciji');
-}
-
-type NewsDto = {
-  id: string;
-  title: string;
-  authorName?: string;
-  publishAt?: string;
-  imageUrl?: string;
-};
-
-export async function generateMetadata(
-  { params }: { params: { id: string } }
-): Promise<Metadata> {
+// Metadata generation function
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
   const id = params.id;
-  let n: NewsDto | null = null;
+  const apiUrl = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3003';
+
   try {
-    const res = await fetch(`${API}/api/news/${id}`, { next: { revalidate: 60 } });
-    if (res.ok) {
-      const json = await res.json();
-      n = json?.data ?? null;
+    // Fetch news data
+    const res = await fetch(`${apiUrl}/api/news/${id}`, {
+      next: { revalidate: 300 }, // Revalidate every 5 minutes
+    });
+
+    if (!res.ok) {
+      return {
+        title: 'Vest nije pronađena',
+      };
     }
-  } catch {}
 
-  const url = `${SITE}/news/${id}`;
-  const title = n ? `${n.title} · Vest` : 'Vest · MMA Balkan';
-  const description = n ? `Vest: ${n.title}${n.authorName ? ` — ${n.authorName}` : ''}.` : 'Vesti sa MMA Balkana.';
+    const { data: news } = await res.json();
 
-  return {
-    title,
-    description,
-    alternates: { canonical: url },
-    openGraph: {
+    if (!news) {
+      return {
+        title: 'Vest nije pronađena',
+      };
+    }
+
+    const publishDate = new Date(news.publishAt).toLocaleDateString('sr-RS', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const title = news.title;
+    const description = news.excerpt || news.content.substring(0, 155) + '...';
+
+    // Generate structured data
+    const structuredData = generateNewsStructuredData({
+      id: news.id,
+      headline: news.title,
+      description,
+      image: news.imageUrl,
+      datePublished: news.publishAt,
+      dateModified: news.updatedAt,
+      author: news.authorName,
+      category: news.category,
+    });
+
+    return {
       title,
       description,
-      type: 'article',
-      url,
-      siteName: 'MMA Balkan',
-      locale: 'sr_RS',
-      images: n?.imageUrl ? [{ url: n.imageUrl }] : undefined,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: n?.imageUrl ? [n.imageUrl] : undefined,
-    },
-  };
+      keywords: [
+        ...news.title.split(' ').filter((w: string) => w.length > 3),
+        'MMA',
+        'vesti',
+        'news',
+        news.category,
+        publishDate,
+      ],
+      authors: [{ name: news.authorName }],
+      openGraph: {
+        title,
+        description,
+        type: 'article',
+        url: `/news/${news.id}`,
+        images: [
+          {
+            url: news.imageUrl || '/og-news-default.jpg',
+            width: 1200,
+            height: 630,
+            alt: news.title,
+          },
+        ],
+        locale: 'sr_RS',
+        siteName: 'MMA Balkan',
+        publishedTime: news.publishAt,
+        modifiedTime: news.updatedAt,
+        section: news.category,
+        authors: [news.authorName],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [news.imageUrl || '/og-news-default.jpg'],
+        site: '@mmabalkan',
+        creator: '@mmabalkan',
+      },
+      alternates: {
+        canonical: `/news/${news.id}`,
+      },
+      other: {
+        'application/ld+json': JSON.stringify(structuredData),
+      },
+    };
+  } catch (error) {
+    console.error('Error generating news metadata:', error);
+    return {
+      title: 'MMA Vest - MMA Balkan',
+      description: 'Najnovije MMA vesti na MMA Balkan platformi.',
+    };
+  }
 }
 
-export default function NewsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default function NewsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
 }

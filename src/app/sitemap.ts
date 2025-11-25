@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
+  const base = process.env['NEXT_PUBLIC_SITE_URL'] || 'http://localhost:3002';
+  const api = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3003';
   if (process.env.NODE_ENV === 'production') {
     const allowLocalBase = /localhost|127\.0\.0\.1/.test(base);
     const allowLocalApi = /localhost|127\.0\.0\.1/.test(api);

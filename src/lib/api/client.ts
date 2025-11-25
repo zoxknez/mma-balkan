@@ -1,8 +1,38 @@
+import { logger } from '../logger';
+
+// Token management
+let accessToken: string | null = null;
+
+export function setTokens(access: string) {
+  accessToken = access;
+  if (typeof window !== 'undefined') {
+    // Only store access token in memory or short-lived storage if needed
+    // For better security, keep it in memory only
+  }
+}
+
+export function clearTokens() {
+  accessToken = null;
+}
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 // API Configuration
 export const API_CONFIG = {
   // U dev koristi relativni URL (proxy preko Next rewrites); u prod koristi NEXT_PUBLIC_API_URL
-  BASE_URL: process.env.NODE_ENV === 'development' ? '' : (process.env.NEXT_PUBLIC_API_URL || ''),
+  BASE_URL: process.env.NODE_ENV === 'development' ? '' : (process.env['NEXT_PUBLIC_API_URL'] || ''),
   ENDPOINTS: {
+    // Auth
+    AUTH_LOGIN: '/api/auth/login',
+    AUTH_REGISTER: '/api/auth/register',
+    AUTH_LOGOUT: '/api/auth/logout',
+    AUTH_REFRESH: '/api/auth/refresh',
+    AUTH_ME: '/api/auth/me',
+    AUTH_CHANGE_PASSWORD: '/api/auth/change-password',
+    CSRF_TOKEN: '/api/csrf-token',
+
     // Fighters
     FIGHTERS: '/api/fighters',
     FIGHTER_BY_ID: (id: string) => `/api/fighters/${id}`,
@@ -15,7 +45,7 @@ export const API_CONFIG = {
     EVENT_BY_ID: (id: string) => `/api/events/${id}`,
     UPCOMING_EVENTS: '/api/events/upcoming',
     LIVE_EVENTS: '/api/events/live',
-  EVENT_FIGHTS: (id: string) => `/api/events/${id}/fights`,
+    EVENT_FIGHTS: (id: string) => `/api/events/${id}/fights`,
     
     // Clubs
     CLUBS: '/api/clubs',
@@ -30,8 +60,8 @@ export const API_CONFIG = {
     NEWS: '/api/news',
     NEWS_BY_ID: (id: string) => `/api/news/${id}`,
     LATEST_NEWS: '/api/news/latest',
-  NEWS_VIEW: (id: string) => `/api/news/${id}/view`,
-  NEWS_LIKE: (id: string) => `/api/news/${id}/like`,
+    NEWS_VIEW: (id: string) => `/api/news/${id}/view`,
+    NEWS_LIKE: (id: string) => `/api/news/${id}/like`,
     
     // Predictions
     PREDICTIONS: '/api/predictions',
@@ -80,46 +110,174 @@ const withTimeout = (ms: number) => {
 
 class ApiClient {
   private baseUrl: string;
+  private refreshing: Promise<boolean> | null = null;
 
   constructor(baseUrl: string = API_CONFIG.BASE_URL) {
     this.baseUrl = baseUrl;
+  }
+
+  private async refreshAccessToken(): Promise<boolean> {
+    if (this.refreshing) {
+      return this.refreshing;
+    }
+
+    this.refreshing = (async () => {
+      try {
+        // Refresh token is now handled via HttpOnly cookie
+        const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // No body needed, cookie is sent automatically
+        });
+
+        if (!response.ok) {
+          clearTokens();
+          this.redirectToLogin();
+          return false;
+        }
+
+        const result = await response.json();
+        if (result.success && result.data) {
+          setTokens(result.data.accessToken);
+          return true;
+        }
+
+        clearTokens();
+        this.redirectToLogin();
+        return false;
+      } catch (error) {
+        console.error('Token refresh failed:', error);
+        clearTokens();
+        this.redirectToLogin();
+        return false;
+      } finally {
+        this.refreshing = null;
+      }
+    })();
+
+    return this.refreshing;
+  }
+
+  private redirectToLogin(): void {
+    // Only redirect on client-side
+    if (typeof window !== 'undefined') {
+      // Store current URL for redirect after login
+      const currentPath = window.location.pathname + window.location.search;
+      if (currentPath !== '/login' && currentPath !== '/register') {
+        localStorage.setItem('redirectAfterLogin', currentPath);
+      }
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    }
   }
 
   private async request<T>(
     endpoint: string,
     method: HttpMethod = 'GET',
     data?: unknown,
-    headers?: Record<string, string>
+    customHeaders?: Record<string, string>,
+    retry = true,
+    retryCount = 0,
+    maxRetries = 3
   ): Promise<ApiResponse<T>> {
     const t = withTimeout(15000);
     try {
       const url = `${this.baseUrl}${endpoint}`;
+      const token = getAccessToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...customHeaders,
+      };
+
+      if (token && !endpoint.includes('/auth/')) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const config: RequestInit = {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers,
-        },
+        headers,
         signal: t.signal,
-        cache: method === 'GET' ? 'no-store' : undefined,
       };
+      
+      if (method === 'GET') {
+        config.cache = 'no-store';
+      }
 
       if (data !== undefined && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         config.body = JSON.stringify(data as Record<string, unknown>);
       }
 
       const response = await fetch(url, config);
-  const result = await response.json();
+      
+      // Handle 401 Unauthorized - try to refresh token
+      if (response.status === 401 && retry && !endpoint.includes('/auth/')) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          return this.request<T>(endpoint, method, data, customHeaders, false);
+        }
+      }
+
+      // Handle 5xx errors with exponential backoff retry
+      if (response.status >= 500 && retryCount < maxRetries && method === 'GET') {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.request<T>(endpoint, method, data, customHeaders, retry, retryCount + 1, maxRetries);
+      }
+
+      // Validate Content-Type before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        // Handle non-JSON responses gracefully
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `HTTP Error: ${response.status} - Unexpected response type`,
+          };
+        }
+        // For successful non-JSON responses, try to parse as text
+        const text = await response.text();
+        logger.warn(`Non-JSON response from ${endpoint}:`, text.substring(0, 100));
+        return {
+          success: false,
+          error: 'Unexpected response format from server',
+        };
+      }
+
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || `HTTP Error: ${response.status}`);
+        const error: ApiResponse<T> = {
+          success: false,
+          error: result.error || result.message || `HTTP Error: ${response.status}`,
+          message: result.message,
+        };
+        return error;
       }
 
       return result;
     } catch (error) {
-      const { logger } = await import('../logger');
       logger.error(`API Error [${method} ${endpoint}]`, error);
-      throw error;
+      
+      // Handle network errors with retry
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Request timeout. Please try again.',
+        };
+      }
+      
+      if (retryCount < maxRetries && method === 'GET') {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.request<T>(endpoint, method, data, customHeaders, retry, retryCount + 1, maxRetries);
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error. Please check your connection.',
+      };
     } finally {
       t.clear();
     }

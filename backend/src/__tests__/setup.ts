@@ -79,6 +79,33 @@ global.testUtils = {
       },
     });
   },
+
+  // Create test news article
+  createTestNews: async (overrides = {}) => {
+    return prisma.news.create({
+      data: {
+        title: 'Test News',
+        slug: `test-news-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        content: 'Lorem ipsum',
+        category: 'GENERAL',
+        authorName: 'Test Author',
+        publishAt: new Date(),
+        ...overrides,
+      },
+    });
+  },
+
+  // Create test club
+  createTestClub: async (overrides = {}) => {
+    return prisma.club.create({
+      data: {
+        name: 'Test Club',
+        city: 'Belgrade',
+        country: 'Serbia',
+        ...overrides,
+      },
+    });
+  },
 };
 
 // Type augmentation for global test utilities
@@ -88,6 +115,8 @@ declare global {
     createTestUser: (overrides?: Record<string, unknown>) => Promise<unknown>;
     createTestFighter: (overrides?: Record<string, unknown>) => Promise<unknown>;
     createTestEvent: (overrides?: Record<string, unknown>) => Promise<unknown>;
+    createTestNews: (overrides?: Record<string, unknown>) => Promise<unknown>;
+    createTestClub: (overrides?: Record<string, unknown>) => Promise<unknown>;
   };
 }
 

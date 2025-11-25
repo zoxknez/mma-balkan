@@ -1,61 +1,107 @@
-import type { Metadata } from 'next';
+import { Metadata } from 'next';
+import { generateFighterStructuredData } from '@/lib/seo';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
-if (process.env.NODE_ENV === 'production') {
-  const allowLocalSite = /localhost|127\.0\.0\.1/.test(SITE);
-  const allowLocalApi = /localhost|127\.0\.0\.1/.test(API);
-  if (!allowLocalSite && !SITE.startsWith('https://')) throw new Error('NEXT_PUBLIC_SITE_URL mora biti https u produkciji');
-  if (!allowLocalApi && !API.startsWith('https://')) throw new Error('NEXT_PUBLIC_API_URL mora biti https u produkciji');
-}
-
-type FighterDto = {
-  id: string;
-  name: string;
-  nickname?: string;
-  country?: string;
-  weightClass?: string;
-};
-
-export async function generateMetadata(
-  { params }: { params: { id: string } }
-): Promise<Metadata> {
+// Metadata generation function
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
   const id = params.id;
-  let f: FighterDto | null = null;
+  const apiUrl = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3003';
+
   try {
-    const res = await fetch(`${API}/api/fighters/${id}`, { next: { revalidate: 60 } });
-    if (res.ok) {
-      const json = await res.json();
-      f = json?.data ?? null;
+    // Fetch fighter data
+    const res = await fetch(`${apiUrl}/api/fighters/${id}`, {
+      next: { revalidate: 3600 }, // Revalidate every hour
+    });
+
+    if (!res.ok) {
+      return {
+        title: 'Borac nije pronađen',
+      };
     }
-  } catch {}
 
-  const url = `${SITE}/fighters/${id}`;
-  const title = f ? `${f.name}${f.nickname ? ` "${f.nickname}"` : ''} · Borac` : 'Borac · MMA Balkan';
-  const description = f
-    ? `${f.name}${f.nickname ? ` "${f.nickname}"` : ''}${f.weightClass ? ` — ${f.weightClass}` : ''}${f.country ? `, ${f.country}` : ''}.`
-    : 'Profil borca na MMA Balkanu.';
+    const { data: fighter } = await res.json();
 
-  return {
-    title,
-    description,
-    alternates: { canonical: url },
-    openGraph: {
+    if (!fighter) {
+      return {
+        title: 'Borac nije pronađen',
+      };
+    }
+
+    const record = `${fighter.wins}-${fighter.losses}-${fighter.draws}`;
+    const title = `${fighter.name}${fighter.nickname ? ` "${fighter.nickname}"` : ''} - MMA Borac`;
+    const description = `${fighter.name} (${record}) - ${fighter.weightClass} kategorija iz ${fighter.country}. ${fighter.koTkoWins} KO pobed${fighter.submissionWins > 0 ? `, ${fighter.submissionWins} submission${fighter.submissionWins > 1 ? 'a' : ''}` : ''}. Pratite statistike i borbe na MMA Balkan.`;
+
+    // Generate structured data
+    const structuredData = generateFighterStructuredData({
+      id: fighter.id,
+      name: fighter.name,
+      weightClass: fighter.weightClass,
+      record,
+      nationality: fighter.country,
+      image: fighter.imageUrl,
+      description: fighter.bio,
+    });
+
+    return {
       title,
       description,
-      type: 'profile',
-      url,
-      siteName: 'MMA Balkan',
-      locale: 'sr_RS',
-    },
-    twitter: {
-      card: 'summary',
-      title,
-      description,
-    },
-  };
+      keywords: [
+        fighter.name,
+        fighter.nickname || '',
+        'MMA',
+        'borac',
+        fighter.weightClass,
+        fighter.country,
+        'borbe',
+        'statistike',
+      ].filter(Boolean),
+      openGraph: {
+        title,
+        description,
+        type: 'profile',
+        url: `/fighters/${fighter.id}`,
+        images: [
+          {
+            url: fighter.imageUrl || '/og-fighter-default.jpg',
+            width: 1200,
+            height: 630,
+            alt: `${fighter.name} - MMA Borac`,
+          },
+        ],
+        locale: 'sr_RS',
+        siteName: 'MMA Balkan',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [fighter.imageUrl || '/og-fighter-default.jpg'],
+        site: '@mmabalkan',
+        creator: '@mmabalkan',
+      },
+      alternates: {
+        canonical: `/fighters/${fighter.id}`,
+      },
+      other: {
+        'application/ld+json': JSON.stringify(structuredData),
+      },
+    };
+  } catch (error) {
+    console.error('Error generating fighter metadata:', error);
+    return {
+      title: 'MMA Borac - MMA Balkan',
+      description: 'Profil MMA borca na MMA Balkan platformi.',
+    };
+  }
 }
 
-export default function FighterLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default function FighterLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
 }

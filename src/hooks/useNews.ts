@@ -1,38 +1,57 @@
 "use client";
 import useSWR from "swr";
-import { apiClient, API_CONFIG, buildQueryParams } from "@/lib/api/client";
+import { getNews, getNewsById, NewsArticle, NewsQuery } from "@/lib/api/news";
+import { swrConfig } from "@/lib/swr-config";
 
-export type ApiNews = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  content: string;
-  category: string;
-  authorName: string;
-  imageUrl?: string;
-  featured: boolean;
-  trending: boolean;
-  views: number;
-  likes: number;
-  publishAt: string; // ISO
+export type { NewsArticle as ApiNews };
+export type { NewsQuery as NewsParams };
+
+// Custom SWR config for news
+const newsConfig = {
+  ...swrConfig,
+  // News updates less frequently
+  refreshInterval: 5 * 60 * 1000, // 5 minutes
+  dedupingInterval: 10000,
 };
 
-export type NewsParams = Partial<{ page: number; limit: number; search: string; category: string; featured: boolean; trending: boolean }>;
-
-export function useNews(params: NewsParams = {}) {
-  const key = ["news", params];
-  const fetcher = async () => {
-    const qs = buildQueryParams(params);
-    return apiClient.get<ApiNews[]>(`${API_CONFIG.ENDPOINTS.NEWS}${qs}`);
+export function useNews(params: NewsQuery = {}) {
+  // Serialize params to ensure stable key
+  const key = ["news", JSON.stringify(params)];
+  
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key, 
+    () => getNews(params),
+    newsConfig
+  );
+  
+  return { 
+    data: data?.data ?? [], 
+    pagination: data?.pagination, 
+    error, 
+    isLoading,
+    isValidating,
+    refresh: mutate 
   };
-  const { data, error, isLoading, mutate } = useSWR(key, fetcher);
-  return { data: data?.data ?? [], pagination: data?.pagination, error, isLoading, refresh: mutate };
 }
 
 export function useNewsItem(id?: string) {
-  const key = id ? ["news", id] : null;
-  const fetcher = async () => apiClient.get<ApiNews>(API_CONFIG.ENDPOINTS.NEWS_BY_ID(id!));
-  const { data, error, isLoading, mutate } = useSWR(key, fetcher);
-  return { data: data?.data, error, isLoading, refresh: mutate };
+  const key = id ? ["news", "item", id] : null;
+  
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key, 
+    () => getNewsById(id!),
+    {
+      ...newsConfig,
+      // Individual articles can be cached longer
+      dedupingInterval: 30000,
+    }
+  );
+  
+  return { 
+    data: data?.data, 
+    error, 
+    isLoading,
+    isValidating,
+    refresh: mutate 
+  };
 }

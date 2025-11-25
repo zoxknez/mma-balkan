@@ -1,36 +1,73 @@
 "use client";
 import useSWR from "swr";
-import { apiClient, API_CONFIG, buildQueryParams } from "@/lib/api/client";
+import { getEvents, getUpcomingEvents, getLiveEvents, Event, EventQuery } from "@/lib/api/events";
+import { swrConfig } from "@/lib/swr-config";
 
-export type Event = {
-  id: string;
-  name: string;
-  startAt: string;
-  status: "SCHEDULED" | "UPCOMING" | "LIVE" | "COMPLETED" | "CANCELLED";
-  city: string;
-  country: string;
-  mainEvent?: string;
-  ticketsAvailable: boolean;
-  fightsCount: number;
-  attendees?: number;
+export type { Event };
+
+// Custom SWR config for events
+const eventsConfig = {
+  ...swrConfig,
+  // Events change frequently, especially during live events
+  refreshInterval: 60000, // 1 minute
+  dedupingInterval: 5000,
 };
 
-export function useEvents(params: { page?: number; limit?: number; status?: 'SCHEDULED' | 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED' | undefined; city?: string; country?: string }) {
-  const key = ["events", params];
-  const fetcher = async () => {
-    const qs = buildQueryParams(params);
-    return apiClient.get<Event[]>(`${API_CONFIG.ENDPOINTS.EVENTS}${qs}`);
+export function useEvents(params: EventQuery) {
+  // Serialize params to ensure stable key
+  const key = params ? ["events", JSON.stringify(params)] : null;
+  
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    key, 
+    () => getEvents(params),
+    eventsConfig
+  );
+  
+  return { 
+    data: data?.data ?? [], 
+    pagination: data?.pagination, 
+    error, 
+    isLoading,
+    isValidating,
+    refresh: mutate 
   };
-  const { data, error, isLoading, mutate } = useSWR(key, fetcher);
-  return { data: data?.data ?? [], pagination: data?.pagination, error, isLoading, refresh: mutate };
 }
 
-export const useUpcomingEvents = () => {
-  const { data, error, isLoading } = useSWR("events/upcoming", () => apiClient.get<Event[]>(API_CONFIG.ENDPOINTS.UPCOMING_EVENTS));
-  return { data: data?.data ?? [], error, isLoading };
+export const useUpcomingEvents = (limit?: number) => {
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    ["events/upcoming", limit], 
+    () => getUpcomingEvents(limit),
+    {
+      ...eventsConfig,
+      // Upcoming events don't change as frequently
+      refreshInterval: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+  return { 
+    data: data?.data ?? [], 
+    error, 
+    isLoading,
+    isValidating,
+    refresh: mutate
+  };
 };
 
 export const useLiveEvents = () => {
-  const { data, error, isLoading } = useSWR("events/live", () => apiClient.get<Event[]>(API_CONFIG.ENDPOINTS.LIVE_EVENTS));
-  return { data: data?.data ?? [], error, isLoading };
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    "events/live", 
+    () => getLiveEvents(),
+    {
+      ...eventsConfig,
+      // Live events need frequent updates
+      refreshInterval: 10000, // 10 seconds
+      revalidateOnFocus: true,
+    }
+  );
+  return { 
+    data: data?.data ?? [], 
+    error, 
+    isLoading,
+    isValidating,
+    refresh: mutate
+  };
 };

@@ -2,20 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Newspaper, Clock, User, Eye, Share2, Bookmark, TrendingUp, Zap, Target, Activity, Filter, Search } from 'lucide-react';
+import { Newspaper, TrendingUp } from 'lucide-react';
 import { Layout } from '@/components/layout';
-import { Button } from '@/components/ui/button';
 import { ParticleSystem, CyberGrid } from '@/components/effects/ParticleSystem';
-import { GlitchText, AnimatedCounter } from '@/components/ui/NeuralComponents';
-import { SelectMenu } from '@/components/ui/UIPrimitives';
 import { useNews } from '@/hooks/useNews';
-import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { usePrefetch } from '@/lib/prefetch';
 
+import { NewsHeader } from '@/components/news/NewsHeader';
+import { NewsStats } from '@/components/news/NewsStats';
+import { NewsControls } from '@/components/news/NewsControls';
+import { FeaturedArticle } from '@/components/news/FeaturedArticle';
+import { NewsGrid } from '@/components/news/NewsGrid';
+import { NewsPagination } from '@/components/news/NewsPagination';
+import { NoResults } from '@/components/news/NoResults';
+import { NewsArticle, SortOption } from '@/components/news/types';
+
 // Mock data za vesti
-const mockNews = [
+const mockNews: NewsArticle[] = [
   {
     id: '1',
     title: 'Aleksandar Rakić spreman za revanš: "Ovaj put neću napraviti istu greška"',
@@ -97,18 +101,18 @@ export default function NewsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState('Sve');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'views' | 'likes'>('date');
+  const [sortBy, setSortBy] = useState<SortOption>('date');
   const [page, setPage] = useState(1);
   const [limit] = useState(9);
 
   const { data: apiNews, isLoading, pagination } = useNews({
     page,
     limit,
-    search: searchTerm || undefined,
-    category: selectedCategory === 'Sve' ? undefined : selectedCategory,
+    ...(searchTerm ? { search: searchTerm } : {}),
+    ...(selectedCategory !== 'Sve' ? { category: selectedCategory } : {}),
   });
 
-  const news = (apiNews || []).map(n => ({
+  const news: NewsArticle[] = (apiNews || []).map(n => ({
     id: n.id,
     title: n.title,
     excerpt: n.excerpt ?? '',
@@ -145,11 +149,10 @@ export default function NewsPage() {
 
   // Initialize state from URL (client-only)
   useEffect(() => {
-    // Use window.location to avoid using useSearchParams during prerender
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q') || '';
     const cat = params.get('category') || 'Sve';
-    const sort = (params.get('sort') as 'date' | 'views' | 'likes' | null) || 'date';
+    const sort = (params.get('sort') as SortOption | null) || 'date';
     const p = Number(params.get('page') || '1') || 1;
     setSearchTerm(q);
     setSelectedCategory(cat);
@@ -192,6 +195,16 @@ export default function NewsPage() {
     return 'Upravo sada';
   };
 
+  const stats = {
+    totalNews: filteredNews.length,
+    trendingCount: filteredNews.filter(n => n.trending).length,
+    totalViews: baseNews.reduce((sum, n) => sum + n.views, 0),
+    activeAuthors: 47
+  };
+
+  const featuredArticle = filteredNews.find(article => article.featured);
+  const gridNews = filteredNews.filter(article => !article.featured);
+
   return (
     <Layout>
       <div className="min-h-screen relative overflow-hidden">
@@ -221,547 +234,53 @@ export default function NewsPage() {
         
         <div className="relative z-10 px-6 py-8">
           <div className="max-w-7xl mx-auto">
-            {/* Ultra-Futuristic Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-12 text-center relative"
-            >
-              {/* Background Glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 via-transparent to-red-600/10 rounded-3xl blur-xl" />
-              
-              <motion.div
-                className="relative"
-                animate={{
-                  textShadow: [
-                    '0 0 20px rgba(249, 115, 22, 0.5)',
-                    '0 0 40px rgba(249, 115, 22, 0.8)',
-                    '0 0 20px rgba(249, 115, 22, 0.5)'
-                  ]
-                }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                <GlitchText
-                  text="📰 BALKANSKE MMA VESTI 📰"
-                  className="text-5xl font-bold mb-6"
-                />
-              </motion.div>
-              
-              <motion.p 
-                className="text-gray-300 text-xl max-w-3xl mx-auto mb-8 leading-relaxed"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                Agregator vesti sa najsvežijim informacijama iz sveta balkanske MMA scene.
-                Ekskluzivni intervjui, analize i brze vesti u realnom vremenu.
-              </motion.p>
-              
-              {/* Stats Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                {[
-                  { icon: <Newspaper className="w-8 h-8" />, value: filteredNews.length, label: "Aktuelnih vesti", color: "#f97316" },
-                  { icon: <TrendingUp className="w-8 h-8" />, value: filteredNews.filter(n => n.trending).length, label: "U trendu", color: "#ef4444" },
-                  { icon: <Eye className="w-8 h-8" />, value: Math.floor(baseNews.reduce((sum, n) => sum + n.views, 0) / 1000), label: "K pregleda", color: "#3b82f6" },
-                  { icon: <User className="w-8 h-8" />, value: 47, label: "Aktivnih autora", color: "#10b981" }
-                ].map((stat, index) => (
-                  <motion.div
-                    key={index}
-                    className="glass-card p-6 text-center group hover:scale-105 transition-all duration-300"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 + index * 0.1 }}
-                    whileHover={{ y: -5 }}
-                  >
-                    <div className="text-white mb-2 flex justify-center" style={{ color: stat.color }}>
-                      {stat.icon}
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1 group-hover:text-orange-400 transition-colors">
-                      <AnimatedCounter value={stat.value} />
-                    </div>
-                    <div className="text-gray-400 text-sm font-medium">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+            <NewsHeader />
+            
+            <NewsStats stats={stats} />
 
-            {/* Ultra-Futuristic Control Panel */}
-            <motion.div
-              className="mb-12"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-            >
-              <div className="glass-card p-8 relative overflow-hidden">
-                {/* Background Effects */}
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-red-500/5" />
-                <CyberGrid />
-                
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white flex items-center">
-                      <Target className="w-6 h-6 mr-3 text-orange-500" />
-                      Sistem za vesti
-                    </h2>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse" />
-                      <span className="text-orange-400 text-sm font-medium">UŽIVO</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Pretraga */}
-                    <motion.div 
-                      className="relative group"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-600/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="relative glass-card p-4 border border-orange-400/30">
-                        <label className="flex items-center text-sm font-medium text-orange-400 mb-2">
-                          <Search className="w-4 h-4 mr-2" />
-                          Pretraga
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Pretražuj vesti..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-900/50 border border-orange-400/50 rounded-lg pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition-all backdrop-blur-sm"
-                          />
-                          <motion.div
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                            animate={{ rotate: searchTerm ? 360 : 0 }}
-                            transition={{ duration: 0.5 }}
-                          >
-                            <Search className="w-5 h-5 text-orange-400" />
-                          </motion.div>
-                        </div>
-                      </div>
-                    </motion.div>
+            <NewsControls 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              categories={categories}
+              totalResults={filteredNews.length}
+            />
 
-                    {/* Filter kategorija */}
-                    <motion.div 
-                      className="relative group"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-orange-600/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="relative glass-card p-4 border border-red-400/30">
-                        <label className="flex items-center text-sm font-medium text-red-400 mb-2">
-                          <Filter className="w-4 h-4 mr-2" />
-                          Kategorija
-                        </label>
-                        <SelectMenu
-                          value={selectedCategory}
-                          onChange={(value) => setSelectedCategory(value)}
-                          options={categories.map(cat => ({ value: cat, label: cat }))}
-                          className="w-full"
-                        />
-                      </div>
-                    </motion.div>
-
-                    {/* Sortiranje */}
-                    <motion.div 
-                      className="relative group"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-600/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="relative glass-card p-4 border border-yellow-400/30">
-                        <label className="flex items-center text-sm font-medium text-yellow-400 mb-2">
-                          <TrendingUp className="w-4 h-4 mr-2" />
-                          Prioritet
-                        </label>
-                        <SelectMenu
-                          value={sortBy}
-                          onChange={(value) => setSortBy(value as 'date' | 'views' | 'likes')}
-                          options={[
-                            { value: 'date', label: 'Hronološki' },
-                            { value: 'views', label: 'Po pregledima' },
-                            { value: 'likes', label: 'Po sviđanjima' }
-                          ]}
-                          className="w-full"
-                        />
-                      </div>
-                    </motion.div>
-                  </div>
-                  
-                  {/* Results Counter */}
-                  <motion.div 
-                    className="mt-6 text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2 }}
-                  >
-                    <div className="inline-flex items-center space-x-2 glass-card px-6 py-3 border border-orange-400/30">
-                      <Activity className="w-5 h-5 text-orange-400" />
-                      <span className="text-white font-medium">
-                        Ukupno pronađenih vesti:
-                      </span>
-                      <span className="text-orange-400 font-bold text-xl">
-                        <AnimatedCounter value={filteredNews.length} />
-                      </span>
-                      <span className="text-gray-400">članaka</span>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Featured Article */}
-            {filteredNews.find(article => article.featured) && (
-              <motion.div
-                className="mb-12"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.3 }}
-              >
-                <div className="text-center mb-8">
-                  <motion.h3 
-                    className="text-3xl font-bold text-white mb-2 flex items-center justify-center"
-                    animate={{
-                      textShadow: [
-                        '0 0 10px rgba(249, 115, 22, 0.5)',
-                        '0 0 20px rgba(249, 115, 22, 0.8)',
-                        '0 0 10px rgba(249, 115, 22, 0.5)'
-                      ]
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <Zap className="w-8 h-8 mr-3 text-orange-500" />
-                    ISTAKNUTA PRIČA
-                    <Zap className="w-8 h-8 ml-3 text-orange-500" />
-                  </motion.h3>
-                  <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full" />
-                </div>
-
-                {(() => {
-                  const featured = filteredNews.find(article => article.featured)!;
-                  return (
-                    <motion.div
-                      className="glass-card p-8 relative overflow-hidden group"
-                      whileHover={{ y: -5 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <CyberGrid />
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      
-                      <div className="relative z-10">
-                        <div className="grid lg:grid-cols-2 gap-8 items-center">
-                          <div>
-                            {/* Category & Trending Badge */}
-                            <div className="flex items-center space-x-3 mb-4">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-800/50 border ${getCategoryColor(featured.category)}`}>
-                                {featured.category}
-                              </span>
-                              {featured.trending && (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 border border-red-500/30 text-red-400">
-                                  <TrendingUp className="w-3 h-3 mr-1" />
-                                  U TRENDU
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Title */}
-                            <h2 className="text-3xl font-bold text-white mb-4 group-hover:text-orange-400 transition-colors">
-                              {featured.title}
-                            </h2>
-                            
-                            {/* Excerpt */}
-                            <p className="text-gray-300 text-lg mb-6 leading-relaxed">
-                              {featured.excerpt}
-                            </p>
-                            
-                            {/* Meta Info */}
-                            <div className="flex items-center justify-between text-sm text-gray-400 mb-6">
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center">
-                                  <User className="w-4 h-4 mr-1" />
-                                  {featured.author}
-                                </div>
-                                <div className="flex items-center">
-                                  <Clock className="w-4 h-4 mr-1" />
-                                  {formatTimeAgo(featured.publishDate)}
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center">
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  {featured.views.toLocaleString()}
-                                </div>
-                                <div className="flex items-center text-red-400">
-                                  ❤️ {featured.likes}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Actions */}
-                            <div className="flex space-x-3">
-                              <Link href={`/news/${featured.id}`} onMouseEnter={() => prefetch(`/news/${featured.id}`)}>
-                                <Button variant="neon" className="relative overflow-hidden group">
-                                <motion.div
-                                  className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 opacity-20"
-                                  animate={{
-                                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                                  }}
-                                  transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                    ease: "linear"
-                                  }}
-                                />
-                                <span className="relative z-10 font-semibold">Pročitaj ceo članak</span>
-                                </Button>
-                              </Link>
-                              <Button variant="outline" size="sm">
-                                <Share2 className="w-4 h-4 mr-2" />
-                                Podeli
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Bookmark className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          {/* Placeholder for image */}
-                          <div className="relative">
-                            <div className="aspect-video bg-gradient-to-br from-orange-500/20 to-red-600/20 rounded-xl flex items-center justify-center relative overflow-hidden">
-                              <CyberGrid />
-                              <div className="relative z-10 text-6xl">📰</div>
-                              <div className="absolute inset-0 border border-orange-400/30 rounded-xl" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })()}
-              </motion.div>
+            {featuredArticle && (
+              <FeaturedArticle 
+                article={featuredArticle}
+                getCategoryColor={getCategoryColor}
+                formatTimeAgo={formatTimeAgo}
+                onPrefetch={prefetch}
+              />
             )}
 
-            {/* News Grid */}
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 1.5 }}
-            >
-              <div className="text-center mb-8">
-                <motion.h3 
-                  className="text-3xl font-bold text-white mb-2 flex items-center justify-center"
-                  animate={{
-                    textShadow: [
-                      '0 0 10px rgba(249, 115, 22, 0.5)',
-                      '0 0 20px rgba(249, 115, 22, 0.8)',
-                      '0 0 10px rgba(249, 115, 22, 0.5)'
-                    ]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <Newspaper className="w-8 h-8 mr-3 text-orange-500" />
-                  NAJSKORIJE VESTI
-                  <Newspaper className="w-8 h-8 ml-3 text-orange-500" />
-                </motion.h3>
-                <div className="w-32 h-1 bg-gradient-to-r from-orange-500 to-red-500 mx-auto rounded-full" />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {isLoading && Array.from({ length: 6 }).map((_, i) => (
-                  <div key={`sk-${i}`} className="glass-card p-6">
-                    <Skeleton className="h-40 w-full mb-4" />
-                    <Skeleton className="h-6 w-3/4 mb-2" />
-                    <Skeleton className="h-4 w-1/2 mb-4" />
-                    <Skeleton className="h-10 w-24" />
-                  </div>
-                ))}
-                {!isLoading && filteredNews.filter(article => !article.featured).map((article, index) => (
-                  <motion.div
-                    key={article.id}
-                    initial={{ opacity: 0, y: 30, rotateX: -15 }}
-                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                    transition={{ 
-                      duration: 0.6, 
-                      delay: 1.7 + index * 0.1,
-                      type: "spring",
-                      stiffness: 100 
-                    }}
-                    whileHover={{ 
-                      y: -10, 
-                      rotateY: 2,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="relative group"
-                  >
-                    {/* Holographic Frame */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-transparent to-red-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                    <div className="absolute inset-0 border border-transparent group-hover:border-orange-400/30 rounded-2xl transition-colors duration-500" />
-                    
-                    {/* Article Card */}
-                    <div className="glass-card p-6 relative overflow-hidden transform transition-all duration-300 group-hover:scale-[1.02] h-full flex flex-col">
-                      <CyberGrid />
-                      
-                      <div className="relative z-10 flex-1 flex flex-col">
-                        {/* Category & Trending */}
-                        <div className="flex items-center justify-between mb-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-800/50 border ${getCategoryColor(article.category)}`}>
-                            {article.category}
-                          </span>
-                          {article.trending && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-500/20 border border-red-500/30 text-red-400">
-                              <TrendingUp className="w-3 h-3 mr-1" />
-                              U TRENDU
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Image Placeholder */}
-                        <div className="aspect-video bg-gradient-to-br from-orange-500/20 to-red-600/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
-                          <CyberGrid />
-                          {article.image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={article.image} alt={article.title} className="absolute inset-0 w-full h-full object-cover rounded-lg" />
-                          ) : (
-                            <div className="relative z-10 text-3xl">📰</div>
-                          )}
-                          <div className="absolute inset-0 border border-orange-400/20 rounded-lg" />
-                        </div>
-                        
-                        {/* Title */}
-                        <h3 className="text-lg font-bold text-white mb-3 group-hover:text-orange-400 transition-colors line-clamp-2 flex-1">
-                          {article.title}
-                        </h3>
-                        
-                        {/* Excerpt */}
-                        <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-1">
-                          {article.excerpt}
-                        </p>
-                        
-                        {/* Meta Info */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                          <div className="flex items-center">
-                            <User className="w-3 h-3 mr-1" />
-                            {article.author}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatTimeAgo(article.publishDate)}
-                          </div>
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center">
-                              <Eye className="w-3 h-3 mr-1" />
-                              {article.views.toLocaleString()}
-                            </div>
-                            <div className="flex items-center text-red-400">
-                              ❤️ {article.likes}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Actions */}
-                        <div className="flex space-x-2">
-                          <Link href={`/news/${article.id}`} className="flex-1" onMouseEnter={() => prefetch(`/news/${article.id}`)}>
-                            <Button variant="neon" size="sm" className="w-full text-xs">
-                              Pročitaj
-                            </Button>
-                          </Link>
-                          <Button variant="outline" size="sm">
-                            <Share2 className="w-3 h-3" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Bookmark className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Neural Scan Lines */}
-                    <motion.div
-                      className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100"
-                      animate={{
-                        background: [
-                          'linear-gradient(90deg, transparent 0%, rgba(249, 115, 22, 0.1) 50%, transparent 100%)',
-                          'linear-gradient(90deg, transparent 50%, rgba(249, 115, 22, 0.1) 100%, transparent 150%)'
-                        ]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatDelay: 1
-                      }}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+            <NewsGrid 
+              news={gridNews}
+              isLoading={isLoading}
+              getCategoryColor={getCategoryColor}
+              formatTimeAgo={formatTimeAgo}
+              onPrefetch={prefetch}
+            />
 
-              {/* Pagination */}
-              <div className="flex justify-center items-center mt-8 gap-4">
-                <Button variant="outline" size="sm" disabled={isLoading || page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                  Prethodna
-                </Button>
-                <span className="text-gray-300 text-sm">
-                  Strana {pagination?.page ?? page} / {pagination?.totalPages ?? '—'}
-                </span>
-                <Button variant="outline" size="sm" disabled={isLoading || (pagination ? page >= pagination.totalPages : false)} onClick={() => setPage((p) => p + 1)}>
-                  Sledeća
-                </Button>
-              </div>
-            </motion.div>
+            <NewsPagination 
+              page={pagination?.page ?? page}
+              totalPages={pagination?.totalPages ?? 1}
+              isLoading={isLoading}
+              onPageChange={setPage}
+            />
 
-            {/* No Results */}
             {filteredNews.length === 0 && !isLoading && (
-              <motion.div 
-                className="text-center py-20"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="glass-card p-12 max-w-lg mx-auto relative overflow-hidden">
-                  <CyberGrid />
-                  <div className="relative z-10">
-                    <motion.div
-                      className="w-20 h-20 mx-auto mb-6 relative"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full opacity-20" />
-                      <div className="absolute inset-2 bg-gray-900 rounded-full flex items-center justify-center">
-                        <Newspaper className="w-8 h-8 text-orange-500" />
-                      </div>
-                    </motion.div>
-                    
-                    <GlitchText
-                      text="NEMA PRIKAZA VESTI"
-                      className="text-2xl font-bold mb-4"
-                    />
-                    
-                    <p className="text-gray-400 text-lg mb-8">
-                      Agregator vesti nije pronašao rezultate za zadate filtere
-                    </p>
-                    
-                    <Button 
-                      variant="neon" 
-                      onClick={() => {
-                        setSelectedCategory('Sve');
-                        setSearchTerm('');
-                        setSortBy('date');
-                      }}
-                      className="relative overflow-hidden group"
-                    >
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 opacity-20"
-                        whileHover={{ opacity: 0.4 }}
-                      />
-                      <span className="relative z-10 font-semibold">Resetuj filtere</span>
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+              <NoResults 
+                onReset={() => {
+                  setSelectedCategory('Sve');
+                  setSearchTerm('');
+                  setSortBy('date');
+                }}
+              />
             )}
           </div>
         </div>

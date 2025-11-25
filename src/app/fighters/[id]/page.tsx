@@ -175,7 +175,7 @@ export default function FighterDetailsPage() {
                         <li key={fi.id} className="py-2 flex items-center justify-between text-sm text-gray-200">
                           <span className="text-white">{fi.redFighter?.name} <span className="text-gray-400">vs</span> {fi.blueFighter?.name}</span>
                           <span className="text-xs text-gray-300 inline-flex items-center gap-2">
-                            <MethodBadge method={fi.method} />
+                            <MethodBadge method={fi.method || null} />
                             <span className="text-gray-400">{fi.round ? `R${fi.round}` : ''} {fi.time ?? ''}</span>
                           </span>
                         </li>

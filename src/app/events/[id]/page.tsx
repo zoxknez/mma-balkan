@@ -60,13 +60,13 @@ export default function EventDetailsPage() {
               ) : e ? (
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">{e.name}</h1>
+                    <h1 data-testid="event-name" className="text-3xl font-bold text-white mb-2">{e.name}</h1>
                     <div className="text-gray-300 text-sm space-y-1">
-                      <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-purple-400" /> {new Date(e.startAt).toLocaleString('sr-RS')}</div>
+                      <div data-testid="event-date" className="flex items-center gap-2"><Calendar className="w-4 h-4 text-purple-400" /> {new Date(e.startAt).toLocaleString('sr-RS')}</div>
                       <div>
                         <Countdown startAt={e.startAt} />
                       </div>
-                      <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-blue-400" /> {e.city}, {e.country}</div>
+                      <div data-testid="event-location" className="flex items-center gap-2"><MapPin className="w-4 h-4 text-blue-400" /> {e.city}, {e.country}</div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -112,6 +112,7 @@ export default function EventDetailsPage() {
                 </Button>
               )}
               <Button
+                data-testid="add-to-calendar"
                 variant="outline"
                 onClick={() => {
                   const start = new Date(e.startAt);
@@ -121,7 +122,7 @@ export default function EventDetailsPage() {
                     description: `MMA događaj — ${e.name}`,
                     location: `${e.city}, ${e.country}`,
                     start,
-                    url: typeof window !== 'undefined' ? window.location.href : undefined,
+                    ...(typeof window !== 'undefined' ? { url: window.location.href } : {}),
                   });
                   downloadICS(`${e.name.replace(/\s+/g, '_')}.ics`, ics);
                 }}
@@ -137,7 +138,7 @@ export default function EventDetailsPage() {
           {/* Fight Card */}
           <div className="mt-10">
             <h2 className="text-white font-semibold mb-3">Karta borbi</h2>
-            <div className="glass-card p-4">
+            <div data-testid="fight-card" className="glass-card p-4">
               {loadingFights ? (
                 <div className="space-y-3">
                   {Array.from({ length: 4 }).map((_, i) => (
@@ -169,7 +170,7 @@ export default function EventDetailsPage() {
                       <div className="text-xs text-gray-300 w-40 text-right">
                         {f.status === 'COMPLETED' ? (
                           <div className="flex items-center justify-end gap-2">
-                            <MethodBadge method={f.method} />
+                            <MethodBadge method={f.method || null} />
                             <span className="text-gray-400">{f.round ? `R${f.round}` : ''} {f.time ?? ''}</span>
                           </div>
                         ) : (
@@ -203,7 +204,7 @@ export default function EventDetailsPage() {
                       <div className="text-xs text-gray-300 w-40 text-right">
                         {f.status === 'COMPLETED' ? (
                           <div className="flex items-center justify-end gap-2">
-                            <MethodBadge method={f.method} />
+                            <MethodBadge method={f.method || null} />
                             <span className="text-gray-400">{f.round ? `R${f.round}` : ''} {f.time ?? ''}</span>
                           </div>
                         ) : (

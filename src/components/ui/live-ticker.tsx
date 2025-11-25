@@ -15,7 +15,7 @@ export function LiveTicker() {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [, setError] = useState<string | null>(null);
   // U dev koristimo relativne rute (Next rewrites), u prod apsolutni ako je postavljen
-  const base = useMemo(() => (process.env.NODE_ENV === 'development' ? '' : (process.env.NEXT_PUBLIC_API_URL || '')), []);
+  const base = useMemo(() => (process.env.NODE_ENV === 'development' ? '' : (process.env['NEXT_PUBLIC_API_URL'] || '')), []);
 
   useEffect(() => {
     let mounted = true;

@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
@@ -19,7 +19,8 @@ export function Card({
   hover = false, 
   glass = true,
   neon = false,
-  onClick 
+  onClick,
+  ...rest
 }: CardProps) {
   const baseClasses = cn(
     'rounded-2xl transition-all duration-300',
@@ -41,6 +42,7 @@ export function Card({
             ? '0 8px 32px 0 rgba(0, 255, 136, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
             : undefined
         }}
+        {...rest}
       >
         {children}
       </motion.div>
@@ -55,6 +57,7 @@ export function Card({
           ? '0 8px 32px 0 rgba(0, 255, 136, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)'
           : undefined
       }}
+      {...rest}
     >
       {children}
     </div>
@@ -82,5 +85,21 @@ export function CardFooter({ children, className }: { children: React.ReactNode;
     <div className={cn('px-6 py-4 border-t border-white/10', className)}>
       {children}
     </div>
+  );
+}
+
+export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <h3 className={cn('text-lg font-semibold leading-none tracking-tight text-white', className)}>
+      {children}
+    </h3>
+  );
+}
+
+export function CardDescription({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <p className={cn('text-sm text-gray-400', className)}>
+      {children}
+    </p>
   );
 }

@@ -1,10 +1,166 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum WeightClass {
+  FLYWEIGHT
+  BANTAMWEIGHT
+  FEATHERWEIGHT
+  LIGHTWEIGHT
+  WELTERWEIGHT
+  MIDDLEWEIGHT
+  LIGHT_HEAVYWEIGHT
+  HEAVYWEIGHT
+  WOMENS_STRAWWEIGHT
+  WOMENS_FLYWEIGHT
+  WOMENS_BANTAMWEIGHT
+  WOMENS_FEATHERWEIGHT
+}
+
+enum EventStatus {
+  SCHEDULED
+  UPCOMING
+  LIVE
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum FightStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+  NO_CONTEST
+}
+
+enum FinishMethod {
+  KO_TKO
+  SUBMISSION
+  DECISION_UNANIMOUS
+  DECISION_SPLIT
+  DECISION_MAJORITY
+  DQ
+  NO_CONTEST
+  DRAW
+}
+
+enum Stance {
+  ORTHODOX
+  SOUTHPAW
+  SWITCH
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String   @db.Text
+  firstName String?
+  lastName  String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  emailVerified Boolean @default(false)
+  emailVerificationToken String? @unique
+  emailVerificationExpires DateTime?
+  passwordResetToken String? @unique
+  passwordResetExpires DateTime?
+  lastPasswordChange DateTime?
+  deletedAt DateTime?
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  sessions Session[]
+  predictions Prediction[]
+  watchlist   WatchlistItem[]
+  followedFighters FollowedFighter[]
+  followedClubs    FollowedClub[]
+  loginAttempts LoginAttempt[]
+  auditLogs AuditLog[]
+  
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([isActive])
+  @@index([emailVerified])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // Composite indexes for soft-delete queries
+  @@index([deletedAt, isActive])
+  @@index([deletedAt, email])
+  @@index([deletedAt, username])
+}
+
+// Session management for refresh tokens
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique @db.Text
+  deviceInfo   String?  // User agent
+  ipAddress    String?
+  isValid      Boolean  @default(true)
+  lastActivity DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@index([isValid])
+  @@index([userId, isValid])
+}
+
+// Track login attempts for security
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String
+  ipAddress String
+  userAgent String?
+  success   Boolean
+  failureReason String?
+  createdAt DateTime @default(now())
+  
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([userId, createdAt])
+  @@index([success])
+}
+
+// Audit log for compliance and security
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  entityType String   // User, Fighter, Event, News, etc.
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model Club {
@@ -15,14 +171,29 @@ model Club {
   address   String?
   website   String?
   phone     String?
+  email     String?
+  logoUrl   String?
+  description String? @db.Text
   members   Int?
+  deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Relations
+  followedBy FollowedClub[]
+  
+  @@index([name])
+  @@index([city])
+  @@index([country])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // Composite indexes
+  @@index([country, city])
+  @@index([deletedAt, country])
 }
 
-// Minimal placeholders to align with frontend routes
 model Fighter {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   nickname    String?
   country     String
@@ -30,39 +201,84 @@ model Fighter {
   birthDate   DateTime?
   heightCm    Int?
   weightKg    Int?
-  weightClass String
+  weightClass WeightClass
   reachCm     Int?
-  stance      String?
-  wins        Int      @default(0)
-  losses      Int      @default(0)
-  draws       Int      @default(0)
-  koTkoWins   Int      @default(0)
-  submissionWins Int   @default(0)
-  decisionWins Int     @default(0)
-  isActive    Boolean  @default(true)
+  stance      Stance?
+  wins        Int         @default(0)
+  losses      Int         @default(0)
+  draws       Int         @default(0)
+  koTkoWins   Int         @default(0)
+  submissionWins Int      @default(0)
+  decisionWins Int        @default(0)
+  isActive    Boolean     @default(true)
+  imageUrl    String?
+  bio         String?     @db.Text
+  instagramHandle String?
+  twitterHandle String?
+  deletedAt   DateTime?
   lastFight   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   // relations to Fight
   redFights   Fight[]  @relation("RedFighter")
   blueFights  Fight[]  @relation("BlueFighter")
+  
+  // User relations
+  followedBy  FollowedFighter[]
+  
+  // Indexes optimized for common queries
+  @@index([name])
+  @@index([country])
+  @@index([countryCode])
+  @@index([weightClass])
+  @@index([isActive])
+  @@index([wins(sort: Desc)])
+  @@index([losses])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([deletedAt])
+  @@index([lastFight])
+  // Composite indexes for filtered queries
+  @@index([country, weightClass, isActive])
+  @@index([weightClass, wins(sort: Desc), isActive])
+  @@index([isActive, updatedAt(sort: Desc)])
+  @@index([isActive, lastFight(sort: Desc)])
+  @@index([deletedAt, isActive])
 }
 
 model Event {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   name      String
   startAt   DateTime
-  status    String
+  status    EventStatus
   city      String
   country   String
+  venue     String?
   mainEvent String?
+  posterUrl String?
+  streamUrl String?
   ticketsAvailable Boolean @default(false)
-  fightsCount Int @default(0)
+  ticketUrl String?
+  featured  Boolean  @default(false)
+  fightsCount Int      @default(0)
   attendees  Int?
+  deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   fights    Fight[]
+  
+  @@index([name])
+  @@index([status])
+  @@index([startAt])
+  @@index([city])
+  @@index([country])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // Composite indexes
+  @@index([status, startAt], map: "Event_status_startAt_idx")
+  @@index([country, city, startAt])
+  @@index([status, startAt(sort: Desc)], map: "Event_status_startAt_desc_idx")
 }
 
 model News {
@@ -70,36 +286,138 @@ model News {
   title      String
   slug       String   @unique
   excerpt    String?
-  content    String
+  content    String   @db.Text
   category   String
   authorName String
+  sourceUrl  String?
   imageUrl   String?
   featured   Boolean  @default(false)
   trending   Boolean  @default(false)
   views      Int      @default(0)
   likes      Int      @default(0)
   publishAt  DateTime
+  deletedAt  DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([category])
+  @@index([featured])
+  @@index([trending])
+  @@index([publishAt(sort: Desc)])
+  @@index([views(sort: Desc)])
+  @@index([likes(sort: Desc)])
+  @@index([authorName])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // Composite indexes for common queries (homepage, feeds)
+  @@index([category, publishAt(sort: Desc)])
+  @@index([featured, publishAt(sort: Desc)])
+  @@index([trending, publishAt(sort: Desc)])
+  @@index([featured, trending, publishAt(sort: Desc)])
+  @@index([deletedAt, publishAt(sort: Desc)])
 }
 
-// Fight card entries per event
 model Fight {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   eventId         String
-  event           Event    @relation(fields: [eventId], references: [id])
-  orderNo         Int      @default(1)
-  section         String   @default("PRELIMS") // MAIN | PRELIMS
-  weightClass     String?
-  status          String   @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderNo         Int          @default(1)
+  section         String       @default("PRELIMS") // MAIN | PRELIMS | CO_MAIN
+  weightClass     WeightClass?
+  status          FightStatus  @default(SCHEDULED)
   redFighterId    String
   blueFighterId   String
-  redFighter      Fighter  @relation("RedFighter", fields: [redFighterId], references: [id])
-  blueFighter     Fighter  @relation("BlueFighter", fields: [blueFighterId], references: [id])
+  redFighter      Fighter      @relation("RedFighter", fields: [redFighterId], references: [id], onDelete: Restrict)
+  blueFighter     Fighter      @relation("BlueFighter", fields: [blueFighterId], references: [id], onDelete: Restrict)
   winnerFighterId String?
-  method          String?  // KO/TKO | SUBMISSION | DECISION | NC
+  method          FinishMethod?
   round           Int?
-  time            String?  // e.g., 3:12
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  timeMinutes     Int?         // Minutes in round
+  timeSeconds     Int?         // Seconds in round
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Relations
+  predictions     Prediction[]
+  
+  @@unique([eventId, orderNo]) // Prevent duplicate fight order numbers
+  @@index([eventId])
+  @@index([status])
+  @@index([redFighterId])
+  @@index([blueFighterId])
+  @@index([orderNo])
+  @@index([section])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // Composite indexes
+  @@index([eventId, orderNo])
+  @@index([status, eventId])
+  @@index([status, deletedAt])
+}
+
+model Prediction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fightId     String
+  fight       Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
+  predictedWinnerId String
+  predictedMethod   String?
+  predictedRound    Int?
+  confidence        Int      @default(5) // 1-10
+  points            Int      @default(0)
+  isCorrect         Boolean?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, fightId])
+  @@index([userId])
+  @@index([fightId])
+  @@index([points(sort: Desc)])
+  @@index([createdAt])
+}
+
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // 'fighter' | 'event' | 'club'
+  itemId    String
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, type, itemId])
+  @@index([userId])
+  @@index([type])
+  @@index([itemId])
+  @@index([createdAt])
+}
+
+model FollowedFighter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fighterId String
+  fighter   Fighter  @relation(fields: [fighterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, fighterId])
+  @@index([userId])
+  @@index([fighterId])
+  @@index([createdAt])
+}
+
+model FollowedClub {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clubId  String
+  club    Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, clubId])
+  @@index([userId])
+  @@index([clubId])
+  @@index([createdAt])
 }

@@ -7,6 +7,8 @@ import { registerFighterRoutes } from '../routes/fighters';
 import { registerEventRoutes } from '../routes/events';
 import { registerNewsRoutes } from '../routes/news';
 import { registerActivityRoutes } from '../routes/activity';
+import { registerSearchRoutes } from '../routes/search';
+import { registerUserRoutes } from '../routes/users';
 import { registerErrorHandler } from '../plugins/error-handler';
 import { env } from './env';
 
@@ -28,6 +30,8 @@ export async function build(): Promise<FastifyInstance> {
   await registerEventRoutes(app);
   await registerNewsRoutes(app);
   await registerActivityRoutes(app);
+  await registerUserRoutes(app);
+  await registerSearchRoutes(app);
   await registerErrorHandler(app);
 
   return app;

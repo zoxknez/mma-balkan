@@ -22,9 +22,9 @@ interface Particle {
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
+    r: parseInt(result[1]!, 16),
+    g: parseInt(result[2]!, 16),
+    b: parseInt(result[3]!, 16)
   } : { r: 0, g: 255, b: 136 };
 }
 
@@ -90,8 +90,8 @@ export function ParticleSystem({
       // Draw connections
       for (let i = 0; i < particlesRef.current.length; i++) {
         for (let j = i + 1; j < particlesRef.current.length; j++) {
-          const particle = particlesRef.current[i];
-          const other = particlesRef.current[j];
+          const particle = particlesRef.current[i]!;
+          const other = particlesRef.current[j]!;
           const dx = particle.x - other.x;
           const dy = particle.y - other.y;
           const distance = Math.sqrt(dx * dx + dy * dy);

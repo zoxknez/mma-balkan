@@ -109,13 +109,36 @@ export class FighterService {
         throw new NotFoundError('Fighter not found', { fighterId: id });
       }
 
+      // Validate update data (same rules as create)
+      if (typeof data.wins === 'number' && data.wins < 0) {
+        throw new ValidationError('Wins cannot be negative');
+      }
+      if (typeof data.losses === 'number' && data.losses < 0) {
+        throw new ValidationError('Losses cannot be negative');
+      }
+      if (typeof data.draws === 'number' && data.draws < 0) {
+        throw new ValidationError('Draws cannot be negative');
+      }
+
+      if (typeof data.heightCm === 'number' && (data.heightCm < 100 || data.heightCm > 250)) {
+        throw new ValidationError('Height must be between 100cm and 250cm');
+      }
+
+      if (typeof data.weightKg === 'number' && (data.weightKg < 40 || data.weightKg > 200)) {
+        throw new ValidationError('Weight must be between 40kg and 200kg');
+      }
+
+      if (typeof data.reachCm === 'number' && (data.reachCm < 100 || data.reachCm > 250)) {
+        throw new ValidationError('Reach must be between 100cm and 250cm');
+      }
+
       const fighter = await fighterRepository.update({ id }, stripUndefinedValues(data));
       
       logger.info('Fighter updated:', { fighterId: fighter.id });
       
       return { data: fighter };
     } catch (error) {
-      if (error instanceof NotFoundError) throw error;
+      if (error instanceof NotFoundError || error instanceof ValidationError) throw error;
       logger.error('Error updating fighter:', error);
       throw new DatabaseError('Failed to update fighter');
     }

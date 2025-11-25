@@ -13,7 +13,7 @@ export type Event = {
   attendees?: number;
 };
 
-export type EventQuery = Partial<{ page: number; limit: number; status: 'SCHEDULED' | 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED'; city: string; country: string; from: string; to: string }>
+export type EventQuery = Partial<{ page: number; limit: number; status: 'SCHEDULED' | 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED' | undefined; city: string; country: string; from: string; to: string }>
 
 export async function getEvents(params: EventQuery) {
   const qs = buildQueryParams(params);

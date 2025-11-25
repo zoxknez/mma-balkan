@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { TrendingUp, Zap, Target, Shield, Sword } from 'lucide-react';
-import { AnimatedCounter } from './NeuralComponents';
+import { AnimatedCounter } from './UIPrimitives';
 import { cn } from '@/lib/utils';
 
 interface StatBarProps {
@@ -45,6 +45,7 @@ export function QuantumStatBar({
       return () => clearTimeout(timer);
     } else {
       setDisplayValue(value);
+      return undefined;
     }
   }, [value, animated]);
 
@@ -200,7 +201,7 @@ export function NeuralStats({ stats, className = '' }: NeuralStatsProps) {
                   onMouseEnter={() => setActiveNode(node.key)}
                   onMouseLeave={() => setActiveNode(null)}
                   className="cursor-pointer"
-                  whileHover={prefersReduced ? undefined : { scale: 1.2 }}
+                  {...(prefersReduced ? {} : { whileHover: { scale: 1.2 } })}
                 />
                 
                 {/* Node Label */}

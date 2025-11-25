@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 
 export type ActivityItem = {
   id: string;
@@ -9,99 +10,124 @@ export type ActivityItem = {
   timeISO?: string;
 };
 
+const fetchActivity = async (url: string): Promise<ActivityItem[]> => {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  return Array.isArray(json?.data) ? json.data : [];
+};
+
+// SSE reconnection configuration
+const SSE_CONFIG = {
+  maxRetries: 5,
+  initialDelayMs: 1000,
+  maxDelayMs: 30000,
+  backoffMultiplier: 2,
+};
+
 export function useActivity() {
-  const [items, setItems] = useState<ActivityItem[]>([]);
-  const base = useMemo(() => (process.env.NODE_ENV === 'development' ? '' : (process.env.NEXT_PUBLIC_API_URL || '')), []);
+  const { mutate } = useSWRConfig();
+  const baseUrl = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3003';
+  const activityUrl = `${baseUrl}/api/activity/recent`;
+  
+  // Track retry state
+  const retryCountRef = useRef(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    let es: EventSource | null = null;
-    let pollId: ReturnType<typeof setInterval> | null = null;
+  const { data: items = [] } = useSWR(activityUrl, fetchActivity, {
+    refreshInterval: 30000, // Fallback polling every 30s
+    dedupingInterval: 10000,
+    fallbackData: [],
+  });
 
-    const withTimeout = async <T,>(p: Promise<T>, ms = 3000): Promise<T> => {
-      return await Promise.race([
-        p,
-        new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)) as Promise<T>,
-      ]);
-    };
+  const calculateBackoff = useCallback((retryCount: number): number => {
+    const delay = SSE_CONFIG.initialDelayMs * Math.pow(SSE_CONFIG.backoffMultiplier, retryCount);
+    // Add jitter to prevent thundering herd
+    const jitter = Math.random() * 1000;
+    return Math.min(delay + jitter, SSE_CONFIG.maxDelayMs);
+  }, []);
 
-    const healthCheck = async () => {
-      try {
-        const res = await withTimeout(fetch(`${base}/healthz`, { cache: 'no-store' }), 2000);
-        return res.ok;
-      } catch {
-        return false;
-      }
-    };
+  const startSSE = useCallback(() => {
+    // Clean up existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
 
-    const startPolling = () => {
-      const load = async () => {
-        try {
-          const res = await fetch(`${base}/api/activity/recent`, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const json = await res.json();
-          if (mounted && Array.isArray(json?.data)) setItems(json.data);
-        } catch {}
-      };
-      load();
-      pollId = setInterval(load, 30000);
-    };
-
-    const startSSE = () => {
-      try {
-        es = new EventSource(`${base}/api/activity/stream`);
+    try {
+      const es = new EventSource(`${baseUrl}/api/activity/stream`);
+      eventSourceRef.current = es;
+      
       es.addEventListener('hello', (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data) as { data?: ActivityItem[] };
-          if (mounted && payload?.data) setItems(payload.data);
-        } catch {}
+          if (payload?.data) {
+            mutate(activityUrl, payload.data, false);
+          }
+          // Reset retry count on successful connection
+          retryCountRef.current = 0;
+        } catch (parseError) {
+          console.warn('[useActivity] Failed to parse hello payload:', parseError);
+        }
       });
+
       es.addEventListener('activity', (e: MessageEvent) => {
         try {
           const payload = JSON.parse(e.data) as { data?: ActivityItem };
-          if (mounted && payload?.data) setItems(prev => [payload.data!, ...prev].slice(0, 20));
-        } catch {}
-      });
-      es.onerror = () => {
-        es?.close();
-        if (process.env.NODE_ENV === 'development') {
-          try {
-            const direct = new EventSource(`http://127.0.0.1:3003/api/activity/stream`);
-            direct.addEventListener('hello', (e: MessageEvent) => {
-              try {
-                const payload = JSON.parse(e.data) as { data?: ActivityItem[] };
-                if (mounted && payload?.data) setItems(payload.data);
-              } catch {}
-            });
-            direct.addEventListener('activity', (e: MessageEvent) => {
-              try {
-                const payload = JSON.parse(e.data) as { data?: ActivityItem };
-                if (mounted && payload?.data) setItems(prev => [payload.data!, ...prev].slice(0, 20));
-              } catch {}
-            });
-            direct.onerror = () => { direct.close(); startPolling(); };
-            es = direct;
-            return;
-          } catch {}
+          if (payload?.data) {
+            mutate(activityUrl, (old: ActivityItem[] | undefined) => {
+              return [payload.data!, ...(old || [])].slice(0, 20);
+            }, false);
+          }
+        } catch (parseError) {
+          console.warn('[useActivity] Failed to parse activity payload:', parseError);
         }
-        startPolling();
-      };
-      } catch {
-        startPolling();
-      }
-    };
+      });
 
-    healthCheck().then((ok) => {
-      if (!mounted) return;
-      if (ok) startSSE(); else startPolling();
-    });
+      es.onerror = () => {
+        es.close();
+        eventSourceRef.current = null;
+        
+        // Attempt reconnection with exponential backoff
+        if (retryCountRef.current < SSE_CONFIG.maxRetries) {
+          const delay = calculateBackoff(retryCountRef.current);
+          console.log(`[useActivity] SSE error, reconnecting in ${Math.round(delay)}ms (attempt ${retryCountRef.current + 1}/${SSE_CONFIG.maxRetries})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            retryCountRef.current++;
+            startSSE();
+          }, delay);
+        } else {
+          console.log('[useActivity] SSE max retries reached, falling back to polling');
+        }
+      };
+
+      es.onopen = () => {
+        // Reset retry count on successful connection
+        retryCountRef.current = 0;
+      };
+    } catch (initError) {
+      console.warn('[useActivity] SSE initialization failed:', initError);
+      // Will rely on SWR polling as fallback
+    }
+  }, [baseUrl, mutate, activityUrl, calculateBackoff]);
+
+  useEffect(() => {
+    startSSE();
 
     return () => {
-      mounted = false;
-      es?.close();
-      if (pollId) clearInterval(pollId);
+      // Clean up on unmount
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
-  }, [base]);
+  }, [startSSE]);
 
   return items;
 }

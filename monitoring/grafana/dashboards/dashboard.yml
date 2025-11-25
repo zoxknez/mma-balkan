@@ -1,0 +1,28 @@
+# Grafana Dashboard Provisioning Configuration
+
+apiVersion: 1
+
+providers:
+  - name: 'MMA Balkan Dashboards'
+    orgId: 1
+    folder: ''
+    folderUid: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+
+# NOTE: Import pre-built dashboards from:
+# - https://grafana.com/grafana/dashboards/1860 (Node Exporter Full)
+# - https://grafana.com/grafana/dashboards/763 (Redis Dashboard)
+# - https://grafana.com/grafana/dashboards/9628 (PostgreSQL Database)
+# 
+# Or create custom dashboards for:
+# - API Response Times
+# - Fighter Statistics
+# - Event Analytics
+# - User Engagement Metrics
+

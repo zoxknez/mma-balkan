@@ -1,7 +1,12 @@
 import { randomUUID } from 'crypto';
-import type { Fighter, Fight, Event, User, Prisma } from '@prisma/client';
+import type { Fighter, Fight, Event, User, Club, News, Prisma } from '@prisma/client';
 
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+const clone = <T>(value: T): T => {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+};
 
 const createCuid = () => `c${randomUUID().replace(/-/g, '').slice(0, 24)}`;
 
@@ -28,6 +33,8 @@ export class MockPrismaClient {
   private fighters: Fighter[] = [];
   private fights: Fight[] = [];
   private events: Event[] = [];
+  private newsItems: News[] = [];
+  private clubItems: Club[] = [];
   private users: User[] = [];
 
   fighter = {
@@ -173,6 +180,111 @@ export class MockPrismaClient {
       this.events.push(event);
       return clone(event);
     },
+
+    findMany: async (args: Prisma.EventFindManyArgs = {}) => {
+      let data = [...this.events];
+
+      if (args.where) {
+        data = data.filter((event) => this.matchesEventWhere(event, args.where));
+      }
+
+      if (typeof args.take === 'number') {
+        data = data.slice(0, args.take);
+      }
+
+      return data.map(clone);
+    },
+  };
+
+  news = {
+    create: async ({ data }: Prisma.NewsCreateArgs) => {
+      const now = new Date();
+      const input = data as unknown as Partial<News>;
+      const article: News = {
+        id: input.id ?? createCuid(),
+        title: input.title ?? 'Test News',
+        slug: input.slug ?? `test-news-${createCuid()}`,
+        excerpt: input.excerpt ?? null,
+        content: input.content ?? 'Content',
+        category: input.category ?? 'GENERAL',
+        authorName: input.authorName ?? 'Author',
+        sourceUrl: input.sourceUrl ?? null,
+        imageUrl: input.imageUrl ?? null,
+        featured: input.featured ?? false,
+        trending: input.trending ?? false,
+        views: input.views ?? 0,
+        likes: input.likes ?? 0,
+        publishAt: input.publishAt ?? now,
+        deletedAt: input.deletedAt ?? null,
+        createdAt: input.createdAt ?? now,
+        updatedAt: input.updatedAt ?? now,
+      };
+
+      this.newsItems.push(article);
+      return clone(article);
+    },
+
+    findMany: async (args: Prisma.NewsFindManyArgs = {}) => {
+      let data = [...this.newsItems];
+
+      if (args.where) {
+        data = data.filter((article) => this.matchesNewsWhere(article, args.where));
+      }
+
+      const orderBys = Array.isArray(args.orderBy) ? args.orderBy : args.orderBy ? [args.orderBy] : [];
+      orderBys.forEach((order) => {
+        if (order?.publishAt) {
+          const direction = order.publishAt === 'desc' ? -1 : 1;
+          data.sort((a, b) => (a.publishAt.getTime() - b.publishAt.getTime()) * direction);
+        }
+      });
+
+      if (typeof args.take === 'number') {
+        data = data.slice(0, args.take);
+      }
+
+      return data.map(clone);
+    },
+  };
+
+  club = {
+    create: async ({ data }: Prisma.ClubCreateArgs) => {
+      const now = new Date();
+      const input = data as unknown as Partial<Club>;
+      const club: Club = {
+        id: input.id ?? createCuid(),
+        name: input.name ?? 'Test Club',
+        city: input.city ?? 'City',
+        country: input.country ?? 'Country',
+        address: input.address ?? null,
+        website: input.website ?? null,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+        logoUrl: input.logoUrl ?? null,
+        description: input.description ?? null,
+        members: input.members ?? null,
+        deletedAt: input.deletedAt ?? null,
+        createdAt: input.createdAt ?? now,
+        updatedAt: input.updatedAt ?? now,
+      };
+
+      this.clubItems.push(club);
+      return clone(club);
+    },
+
+    findMany: async (args: Prisma.ClubFindManyArgs = {}) => {
+      let data = [...this.clubItems];
+
+      if (args.where) {
+        data = data.filter((club) => this.matchesClubWhere(club, args.where));
+      }
+
+      if (typeof args.take === 'number') {
+        data = data.slice(0, args.take);
+      }
+
+      return data.map(clone);
+    },
   };
 
   user = {
@@ -212,6 +324,8 @@ export class MockPrismaClient {
     this.fighters = [];
     this.fights = [];
     this.events = [];
+    this.newsItems = [];
+    this.clubItems = [];
     this.users = [];
   }
 
@@ -297,6 +411,135 @@ export class MockPrismaClient {
     });
 
     return sorted;
+  }
+
+  private matchesNewsWhere(article: News, where: Prisma.NewsWhereInput): boolean {
+    if (where.deletedAt === null && article.deletedAt !== null) {
+      return false;
+    }
+
+    if (where.category) {
+      if (typeof where.category === 'string') {
+        if (article.category !== where.category) {
+          return false;
+        }
+      } else if ('equals' in where.category && where.category.equals) {
+        if (!this.equalsInsensitive(article.category, where.category.equals, where.category.mode)) {
+          return false;
+        }
+      } else if ('in' in where.category && Array.isArray(where.category.in)) {
+        const match = where.category.in.some((value) => this.equalsInsensitive(article.category, value, where.category?.mode));
+        if (!match) {
+          return false;
+        }
+      }
+    }
+
+    if (where.OR && where.OR.length > 0) {
+      const orMatch = where.OR.some((condition) => {
+        if (!condition) return false;
+
+        const titleMatch = condition.title && 'contains' in condition.title
+          ? containsMatch(article.title, condition.title.contains ?? '', condition.title.mode)
+          : false;
+
+        const contentMatch = condition.content && 'contains' in condition.content
+          ? containsMatch(article.content, condition.content.contains ?? '', condition.content.mode)
+          : false;
+
+        const authorMatch = condition.authorName && 'contains' in condition.authorName
+          ? containsMatch(article.authorName, condition.authorName.contains ?? '', condition.authorName.mode)
+          : false;
+
+        return titleMatch || contentMatch || authorMatch;
+      });
+
+      if (!orMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private matchesClubWhere(club: Club, where: Prisma.ClubWhereInput): boolean {
+    if (where.deletedAt === null && club.deletedAt !== null) {
+      return false;
+    }
+
+    if (where.OR && where.OR.length > 0) {
+      const orMatch = where.OR.some((condition) => {
+        if (!condition) return false;
+
+        const nameMatch = condition.name && 'contains' in condition.name
+          ? containsMatch(club.name, condition.name.contains ?? '', condition.name.mode)
+          : false;
+
+        const cityMatch = condition.city && 'contains' in condition.city
+          ? containsMatch(club.city, condition.city.contains ?? '', condition.city.mode)
+          : false;
+
+        const countryMatch = condition.country && 'contains' in condition.country
+          ? containsMatch(club.country, condition.country.contains ?? '', condition.country.mode)
+          : false;
+
+        return nameMatch || cityMatch || countryMatch;
+      });
+
+      if (!orMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private equalsInsensitive(source: string, target: string, mode?: Prisma.QueryMode) {
+    if (mode === 'insensitive') {
+      return source.toLowerCase() === target.toLowerCase();
+    }
+    return source === target;
+  }
+
+  private matchesEventWhere(event: Event, where: Prisma.EventWhereInput): boolean {
+    if (where.deletedAt === null && event.deletedAt !== null) {
+      return false;
+    }
+
+    if (where.startAt) {
+      if ('gte' in where.startAt && where.startAt.gte && event.startAt < where.startAt.gte) {
+        return false;
+      }
+      if ('lte' in where.startAt && where.startAt.lte && event.startAt > where.startAt.lte) {
+        return false;
+      }
+    }
+
+    if (where.OR && where.OR.length > 0) {
+      const orMatch = where.OR.some((condition) => {
+        if (!condition) return false;
+
+        const nameMatch = condition.name && 'contains' in condition.name
+          ? containsMatch(event.name, condition.name.contains ?? '', condition.name.mode)
+          : false;
+
+        const cityMatch = condition.city && 'contains' in condition.city
+          ? containsMatch(event.city, condition.city.contains ?? '', condition.city.mode)
+          : false;
+
+        const countryMatch = condition.country && 'contains' in condition.country
+          ? containsMatch(event.country, condition.country.contains ?? '', condition.country.mode)
+          : false;
+
+        return nameMatch || cityMatch || countryMatch;
+      });
+
+      if (!orMatch) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
 

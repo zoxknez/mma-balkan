@@ -7,6 +7,15 @@ import { AuthRequest } from "../lib/auth";
 import { ErrorLogger } from "../lib/errors";
 import { emailService, generateSecureToken, hashToken } from "../lib/email";
 import { env } from "../lib/env";
+import { auditService } from "../lib/audit";
+
+// Helper to extract request details for audit logging
+function getRequestDetails(req: { ip: string; headers: { 'user-agent'?: string } }) {
+  return {
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+  };
+}
 
 // Validation schemas
 const registerSchema = z.object({
@@ -93,6 +102,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
       await emailService.sendEmailVerification(user.email, user.username, verificationToken);
 
+      // Audit log for registration
+      await auditService.logDataChange('CREATE', 'User', user.id, {
+        newValue: { email: user.email, username: user.username },
+        ...getRequestDetails(req),
+      });
+
       return ok({
         user,
         message: "User registered successfully. Please verify your email to activate your account."
@@ -136,20 +151,41 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       });
 
       if (!user) {
+        // Audit failed login attempt
+        await auditService.logLogin(null, false, {
+          email,
+          failureReason: 'User not found',
+          ...getRequestDetails(req),
+        });
         return reply.code(401).send(fail("Invalid email or password"));
       }
 
       if (!user.emailVerified) {
+        await auditService.logLogin(user.id, false, {
+          email,
+          failureReason: 'Email not verified',
+          ...getRequestDetails(req),
+        });
         return reply.code(403).send(fail("Email address is not verified"));
       }
 
       if (!user.isActive) {
+        await auditService.logLogin(user.id, false, {
+          email,
+          failureReason: 'Account deactivated',
+          ...getRequestDetails(req),
+        });
         return reply.code(401).send(fail("Account is deactivated"));
       }
 
       // Verify password
       const isValidPassword = await verifyPassword(password, user.password);
       if (!isValidPassword) {
+        await auditService.logLogin(user.id, false, {
+          email,
+          failureReason: 'Invalid password',
+          ...getRequestDetails(req),
+        });
         return reply.code(401).send(fail("Invalid email or password"));
       }
 
@@ -158,6 +194,9 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         where: { id: user.id },
         data: { lastLogin: new Date() }
       });
+
+      // Audit successful login
+      await auditService.logLogin(user.id, true, getRequestDetails(req));
 
       // Generate token pair
       const tokens = generateTokens({
@@ -260,6 +299,9 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         data: { password: hashedNewPassword }
       });
 
+      // Audit password change
+      await auditService.logUserAction(authReq.user!.id, 'PASSWORD_CHANGE', getRequestDetails(req));
+
       return ok({ message: "Password changed successfully" });
     } catch (error) {
       ErrorLogger.log(error as Error, { context: 'change_password' });
@@ -269,7 +311,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
 
   // Logout (client-side token removal)
   app.post("/api/auth/logout", { preHandler: authenticate }, async (req, reply) => {
-    void (req as AuthRequest);
+    const authReq = req as AuthRequest;
+    
+    // Audit logout
+    await auditService.logLogout(authReq.user!.id, getRequestDetails(req));
+    
     reply.clearCookie('refreshToken', { path: '/' });
     return ok({ message: "Logout successful" });
   });
@@ -449,6 +495,11 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         }
       });
 
+      // Audit email verification
+      await auditService.logUserAction(user.id, 'EMAIL_VERIFY', {
+        entityId: user.id,
+      });
+
       // Send welcome email
       await emailService.sendWelcomeEmail(user.email, user.username);
 
@@ -570,6 +621,9 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           lastPasswordChange: new Date(),
         }
       });
+
+      // Audit password reset
+      await auditService.logUserAction(user.id, 'PASSWORD_RESET', getRequestDetails(req));
 
       return ok({ message: "Password reset successfully" });
     } catch (error) {

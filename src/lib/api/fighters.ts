@@ -106,15 +106,34 @@ export class FighterService {
 
 // External API integrations for fighter data
 export class ExternalFighterDataService {
+  // Escape special characters for SPARQL queries to prevent injection
+  private static escapeSPARQL(input: string): string {
+    return input
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+  }
+
   // Get fighter data from Wikidata
   static async getWikidataFighter(
     fighterName: string
   ): Promise<unknown[]> {
+    // Sanitize input to prevent SPARQL injection
+    const safeName = this.escapeSPARQL(fighterName.trim());
+    
+    // Validate input length and content
+    if (safeName.length < 2 || safeName.length > 100) {
+      return [];
+    }
+    
     const query = `
       SELECT ?fighter ?fighterLabel ?birthDate ?height ?countryLabel ?image WHERE {
         ?fighter wdt:P106 wd:Q11124849 ; # Mixed martial artist
                  rdfs:label ?fighterLabel .
-        FILTER (CONTAINS(LCASE(?fighterLabel), LCASE("${fighterName}")))
+        FILTER (CONTAINS(LCASE(?fighterLabel), LCASE("${safeName}")))
         OPTIONAL { ?fighter wdt:P569 ?birthDate }
         OPTIONAL { ?fighter wdt:P2048 ?height }
         OPTIONAL { ?fighter wdt:P27 ?country . ?country rdfs:label ?countryLabel }

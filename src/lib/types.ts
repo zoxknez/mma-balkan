@@ -4,22 +4,26 @@ export interface Fighter {
   nickname?: string;
   country: string;
   countryCode: string;
-  birthDate: Date;
-  height: number; // cm
-  weight: number; // kg
-  weightClass: WeightClass;
-  reach?: number; // cm
-  stance: FightingStance;
+  birthDate?: Date;
+  heightCm?: number; // Synced with Prisma
+  weightKg?: number; // Synced with Prisma
+  weightClass: string; // Changed from enum to string to match Prisma
+  reachCm?: number; // Synced with Prisma
+  stance?: string; // Changed from enum to string to match Prisma
   wins: number;
   losses: number;
   draws: number;
   koTkoWins: number;
   submissionWins: number;
   decisionWins: number;
+  isActive: boolean;
+  deletedAt?: Date; // Added for soft delete
+  lastFight?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  // Extended properties not in Prisma
   club?: Club;
   profileImage?: string;
-  isActive: boolean;
-  lastFight?: Date;
   upcomingFight?: Event;
   socialMedia?: SocialMedia;
   biography?: string;
@@ -27,24 +31,30 @@ export interface Fighter {
   ranking?: {
     position: number;
     organization: string;
-    weightClass: WeightClass;
+    weightClass: string;
   };
 }
 
 export interface Event {
   id: string;
   name: string;
-  organization: Organization;
-  date: Date;
-  location: {
-    venue: string;
-    city: string;
-    country: string;
-    countryCode: string;
-  };
-  fightCard: Fight[];
+  slug?: string;
+  startAt: Date; // Synced with Prisma
+  status: string; // Changed from enum to string
+  city: string; // Synced with Prisma
+  country: string; // Synced with Prisma
+  mainEvent?: string; // Synced with Prisma
+  ticketsAvailable: boolean; // Synced with Prisma
+  fightsCount: number; // Synced with Prisma
+  attendees?: number; // Synced with Prisma
+  deletedAt?: Date; // Added for soft delete
+  createdAt: Date;
+  updatedAt: Date;
+  fights?: Fight[]; // Prisma relation
+  // Extended properties not in Prisma
+  organization?: Organization;
+  venue?: string;
   poster?: string;
-  status: EventStatus;
   ticketUrl?: string;
   streamingInfo?: StreamingInfo;
   weightInResults?: WeightInResult[];
@@ -52,17 +62,26 @@ export interface Event {
 
 export interface Fight {
   id: string;
-  fighter1: Fighter;
-  fighter2: Fighter;
-  weightClass: WeightClass;
-  rounds: number;
-  isMainEvent: boolean;
-  isTitleFight: boolean;
-  title?: string;
-  result?: FightResult;
-  method?: FinishMethod;
+  eventId: string;
+  orderNo: number; // Synced with Prisma
+  section: string; // MAIN | PRELIMS - Synced with Prisma
+  weightClass?: string; // Synced with Prisma
+  status: string; // SCHEDULED | COMPLETED | CANCELLED - Synced with Prisma
+  redFighterId: string; // Synced with Prisma
+  blueFighterId: string; // Synced with Prisma
+  winnerFighterId?: string; // Synced with Prisma
+  method?: string; // KO/TKO | SUBMISSION | DECISION | NC - Synced with Prisma
   round?: number;
-  time?: string;
+  time?: string; // e.g., 3:12
+  deletedAt?: Date; // Added for soft delete
+  createdAt: Date;
+  updatedAt: Date;
+  // Relations
+  event?: Event;
+  redFighter?: Fighter;
+  blueFighter?: Fighter;
+  predictions?: Prediction[];
+  // Extended properties
   bonuses?: FightBonus[];
 }
 
@@ -91,23 +110,27 @@ export interface Organization {
 export interface Club {
   id: string;
   name: string;
-  location: {
-    address: string;
-    city: string;
-    country: string;
-    countryCode: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
+  city: string; // Synced with Prisma
+  country: string; // Synced with Prisma
+  address?: string; // Synced with Prisma
+  website?: string; // Synced with Prisma
+  phone?: string; // Synced with Prisma
+  members?: number; // Synced with Prisma
+  deletedAt?: Date; // Added for soft delete
+  createdAt: Date;
+  updatedAt: Date;
+  // Relations
+  followedBy?: unknown[]; // FollowedClub[]
+  // Extended properties not in Prisma
+  coordinates?: {
+    lat: number;
+    lng: number;
   };
-  disciplines: MartialArt[];
-  trainers: Trainer[];
-  fighters: Fighter[];
-  contactInfo: {
-    phone?: string;
+  disciplines?: MartialArt[];
+  trainers?: Trainer[];
+  fighters?: Fighter[];
+  contactInfo?: {
     email?: string;
-    website?: string;
   };
   socialMedia?: SocialMedia;
   schedules?: TrainingSchedule[];
@@ -116,7 +139,6 @@ export interface Club {
   images?: string[];
   established?: Date;
   description?: string;
-  isVerified: boolean;
 }
 
 export interface Trainer {
@@ -149,58 +171,89 @@ export interface PricingPlan {
 export interface News {
   id: string;
   title: string;
-  summary: string;
+  slug: string; // Synced with Prisma
+  excerpt?: string; // Synced with Prisma
   content: string;
-  author: string;
-  publishedAt: Date;
-  updatedAt?: Date;
-  category: NewsCategory;
-  tags: string[];
-  featuredImage?: string;
+  category: string; // Changed from enum to string
+  authorName: string; // Synced with Prisma
+  imageUrl?: string; // Synced with Prisma
+  featured: boolean; // Synced with Prisma
+  trending: boolean; // Synced with Prisma
+  views: number;
+  likes: number; // Synced with Prisma
+  publishAt: Date; // Synced with Prisma
+  deletedAt?: Date; // Added for soft delete
+  createdAt: Date;
+  updatedAt: Date;
+  // Extended properties not in Prisma
+  tags?: string[];
   relatedFighters?: Fighter[];
   relatedEvents?: Event[];
   relatedClubs?: Club[];
-  isVerified: boolean;
   source?: string;
-  views: number;
 }
 
 export interface Prediction {
   id: string;
   userId: string;
-  fight: Fight;
-  predictedWinner: Fighter;
-  method?: FinishMethod;
-  round?: number;
-  confidence: number; // 1-10
+  fightId: string; // Synced with Prisma
+  predictedWinnerId: string; // Synced with Prisma
+  predictedMethod?: string; // Synced with Prisma
+  predictedRound?: number; // Synced with Prisma
+  confidence: number; // 1-10 - Synced with Prisma
+  points: number; // Synced with Prisma
+  isCorrect?: boolean; // Synced with Prisma
   createdAt: Date;
-  points?: number;
+  updatedAt: Date;
+  // Relations
+  user?: UserProfile;
+  fight?: Fight;
 }
 
+// Backend User model (synced with Prisma)
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'USER' | 'MODERATOR' | 'ADMIN';
+  isActive: boolean;
+  deletedAt?: Date;
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Frontend UserProfile (extended)
 export interface UserProfile {
   id: string;
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'USER' | 'MODERATOR' | 'ADMIN';
   avatar?: string;
   country?: string;
   favoriteOrganization?: Organization;
-  followedFighters: Fighter[];
-  followedClubs: Club[];
-  watchlist: Event[];
-  predictions: Prediction[];
-  stats: {
+  followedFighters?: Fighter[];
+  followedClubs?: Club[];
+  watchlist?: Event[];
+  predictions?: Prediction[];
+  stats?: {
     correctPredictions: number;
     totalPredictions: number;
     points: number;
     rank: number;
   };
-  preferences: {
+  preferences?: {
     language: Language;
     script: Script;
     theme: Theme;
     notifications: NotificationSettings;
   };
   joinedAt: Date;
+  lastLogin?: Date;
 }
 
 // Enums
